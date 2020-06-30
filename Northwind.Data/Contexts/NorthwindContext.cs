@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Northwind.Data.Entities;
 
 namespace Northwind.Data.Contexts
@@ -25,8 +23,7 @@ namespace Northwind.Data.Contexts
         {
             if (!optionsBuilder.IsConfigured)
             {
-                string path = Path.Combine(Environment.CurrentDirectory, "Northwind.db");
-                optionsBuilder.UseSqlite($"Filename={path}")
+                optionsBuilder.UseSqlite($"Data Source=Northwind.db;Version=3;")
                               .EnableSensitiveDataLogging();
             }
         }

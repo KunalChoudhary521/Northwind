@@ -1,0 +1,7 @@
+Resource: https://docs.microsoft.com/en-us/ef/core/managing-schemas/migrations/?tabs=dotnet-core-cli
+
+Install dotnet-ef CLI tool using the following command:
+> dotnet tool install --global dotnet-ef
+
+To add an initial migration, run the following command from solution directory:
+> dotnet ef migrations add InitialCreate -p Northwind.Data -s Northwind.API
