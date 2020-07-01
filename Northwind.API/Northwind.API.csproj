@@ -8,5 +8,9 @@
       <ProjectReference Include="..\Northwind.Data\Northwind.Data.csproj" />
     </ItemGroup>
 
+    <ItemGroup>      
+      <PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.1" />
+    </ItemGroup>
+
 
 </Project>

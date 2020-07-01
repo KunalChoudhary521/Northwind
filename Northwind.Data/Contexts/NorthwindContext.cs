@@ -18,16 +18,6 @@ namespace Northwind.Data.Contexts
         {
         }
 
-        // TODO: remove this method and setup DB connection in API project
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                optionsBuilder.UseSqlite($"Data Source=Northwind.db;Version=3;")
-                              .EnableSensitiveDataLogging();
-            }
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Employee>()
