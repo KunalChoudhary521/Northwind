@@ -7,7 +7,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Northwind.API.Repositories;
+using Northwind.API.Services;
 using Northwind.Data.Contexts;
+using Northwind.Data.Entities;
 
 namespace Northwind.API
 {
@@ -26,12 +28,10 @@ namespace Northwind.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddDbContext<NorthwindContext>(options =>
-            {
-                // TODO: DB file must be in the root of API project
-                var connString = Configuration.GetConnectionString("NorthWindDB").Replace("~", _env.ContentRootPath);
-                options.UseSqlite(new SQLiteConnection(connString));
-            });
+            ConfigureSQliteContext(services);
+            services.AddAutoMapper(typeof(Startup));
+            ConfigureRepositories(services);
+            ConfigureAppServices(services);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -49,6 +49,26 @@ namespace Northwind.API
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+        }
+
+        private void ConfigureSQliteContext(IServiceCollection services)
+        {
+            services.AddDbContext<NorthwindContext>(options =>
+            {
+                var connString = Configuration.GetConnectionString("NorthWindDB").Replace("~", _env.ContentRootPath);
+                options.UseSqlite(new SQLiteConnection(connString));
+            });
+        }
+
+        private void ConfigureRepositories(IServiceCollection services)
+        {
+            services.AddScoped<IRepository<Category>, CategoryRepository>();
+            services.AddScoped<ProductRepository>();
+        }
+
+        private void ConfigureAppServices(IServiceCollection services)
+        {
+            services.AddScoped<CategoryService>();
         }
     }
 }
