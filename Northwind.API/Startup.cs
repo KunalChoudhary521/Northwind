@@ -66,7 +66,7 @@ namespace Northwind.API
         private void ConfigureRepositories(IServiceCollection services)
         {
             services.AddScoped<IRepository<Category>, CategoryRepository>();
-            services.AddScoped<ProductRepository>();
+            services.AddScoped<IRepository<Product>, ProductRepository>();
         }
 
         private void ConfigureAppServices(IServiceCollection services)

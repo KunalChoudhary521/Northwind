@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Northwind.API.Repositories;
@@ -9,11 +11,11 @@ namespace Northwind.API.Services
     public class CategoryService
     {
         private readonly IRepository<Category> _categoryRepository;
-        private readonly ProductRepository _productRepository;
+        private readonly IRepository<Product> _productRepository;
         private readonly ILogger<CategoryService> _logger;
 
         public CategoryService(IRepository<Category> categoryRepository,
-                               ProductRepository productRepository,
+                               IRepository<Product> productRepository,
                                ILogger<CategoryService> logger)
         {
             _categoryRepository = categoryRepository;
@@ -56,7 +58,9 @@ namespace Northwind.API.Services
         public async void DeleteCategory(Category category)
         {
             _logger.LogInformation($"Detach products from category: {category.CategoryName}");
-            var products = await _productRepository.FindByCategoryId(category.CategoryId).ToArrayAsync();
+
+            Expression<Func<Product, bool>> findByCategoryId = product => product.CategoryId == category.CategoryId;
+            var products = await _productRepository.FindByCondition(findByCategoryId).ToArrayAsync();
 
             foreach (var product in products)
             {

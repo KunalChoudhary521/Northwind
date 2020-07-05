@@ -8,19 +8,22 @@ namespace Northwind.API.Repositories
 {
     public abstract class RepositoryBase<T> : IRepository<T> where T : class
     {
-        protected readonly NorthwindContext Context;
+        private readonly NorthwindContext _context;
 
-        public RepositoryBase(NorthwindContext context)
+        protected RepositoryBase(NorthwindContext context)
         {
-            Context = context;
+            _context = context;
         }
 
-        public abstract IQueryable<T> FindAll();
-        public abstract IQueryable<T> FindByCondition(Expression<Func<T, bool>> expression);
+        public virtual IQueryable<T> FindAll() => _context.Set<T>();
+        public virtual IQueryable<T> FindByCondition(Expression<Func<T, bool>> expression)
+        {
+            return FindAll().Where(expression);
+        }
 
-        public void Add(T entity) => Context.Set<T>().Add(entity);
-        public void Update(T entity) => Context.Set<T>().Update(entity);
-        public void Delete(T entity) => Context.Set<T>().Remove(entity);
-        public async Task<bool> SaveChangesAsync() => await Context.SaveChangesAsync() > 0;
+        public void Add(T entity) => _context.Set<T>().Add(entity);
+        public void Update(T entity) => _context.Set<T>().Update(entity);
+        public void Delete(T entity) => _context.Set<T>().Remove(entity);
+        public async Task<bool> SaveChangesAsync() => await _context.SaveChangesAsync() > 0;
     }
 }
