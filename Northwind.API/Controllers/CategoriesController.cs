@@ -1,7 +1,5 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Northwind.API.Models;
@@ -28,59 +26,36 @@ namespace Northwind.API.Controllers
         [HttpGet]
         public async Task<ActionResult<CategoryModel[]>> GetCategories()
         {
-            try
-            {
-                var categories = await _categoryService.GetAllCategories();
-                var categoryModels = _mapper.Map<CategoryModel[]>(categories);
+            var categories = await _categoryService.GetAllCategories();
+            var categoryModels = _mapper.Map<CategoryModel[]>(categories);
 
-                return categoryModels;
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error: Unable to get all categories");
-            }
+            return categoryModels;
         }
 
         [HttpGet("{categoryId:int}")]
         public async Task<ActionResult<CategoryModel>> GetCategory(int categoryId)
         {
-            try
-            {
-                var category = await _categoryService.GetCategoryById(categoryId);
+            var category = await _categoryService.GetCategoryById(categoryId);
 
-                if (category == null)
-                    return NotFound();
+            if (category == null)
+                return NotFound();
 
-                var categoryModel = _mapper.Map<CategoryModel>(category);
-                return categoryModel;
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                  $"Error: Unable to get category with id: {categoryId}");
-            }
+            var categoryModel = _mapper.Map<CategoryModel>(category);
+            return categoryModel;
         }
 
         [HttpPost]
         public async Task<ActionResult<CategoryModel>> AddCategory(CategoryModel categoryModel)
         {
-            try
+            var category = _mapper.Map<Category>(categoryModel);
+            _categoryService.AddCategory(category);
+            if (await _categoryService.IsSavedToDb())
             {
-                var category = _mapper.Map<Category>(categoryModel);
-                _categoryService.AddCategory(category);
-                if (await _categoryService.IsSavedToDb())
-                {
-                    var categoryPersisted = await _categoryService.GetCategoryByName(categoryModel.CategoryName);
-                    var location = _linkGenerator.GetPathByAction("GetCategory", "Categories",
-                                                                  new {categoryId = categoryPersisted.CategoryId});
+                var categoryPersisted = await _categoryService.GetCategoryByName(categoryModel.CategoryName);
+                var location = _linkGenerator.GetPathByAction("GetCategory", "Categories",
+                    new {categoryId = categoryPersisted.CategoryId});
 
-                    return Created(location, categoryPersisted);
-                }
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                  $"Error: Unable to add category: {categoryModel.CategoryName}");
+                return Created(location, categoryPersisted);
             }
 
             return BadRequest();
@@ -89,23 +64,15 @@ namespace Northwind.API.Controllers
         [HttpPut("{categoryId:int}")]
         public async Task<ActionResult<CategoryModel>> UpdateCategory(int categoryId, CategoryModel categoryModel)
         {
-            try
-            {
-                var oldCategory = await _categoryService.GetCategoryById(categoryId);
-                if (oldCategory == null)
-                    return NotFound($"Unable to category with id: {categoryId}");
+            var oldCategory = await _categoryService.GetCategoryById(categoryId);
+            if (oldCategory == null)
+                return NotFound();
 
-                var updatedCategory = _mapper.Map(categoryModel, oldCategory);
-                _categoryService.UpdateCategory(updatedCategory);
+            var updatedCategory = _mapper.Map(categoryModel, oldCategory);
+            _categoryService.UpdateCategory(updatedCategory);
 
-                if (await _categoryService.IsSavedToDb())
-                    return Ok(_mapper.Map<CategoryModel>(updatedCategory));
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                  $"Error: Unable to update category: {categoryModel.CategoryName}");
-            }
+            if (await _categoryService.IsSavedToDb())
+                return Ok(_mapper.Map<CategoryModel>(updatedCategory));
 
             return BadRequest();
         }
@@ -113,22 +80,14 @@ namespace Northwind.API.Controllers
         [HttpDelete("{categoryId:int}")]
         public async Task<ActionResult> DeleteCategory(int categoryId)
         {
-            try
-            {
-                var existingCategory = await _categoryService.GetCategoryById(categoryId);
-                if (existingCategory == null)
-                    return NotFound($"Unable to find category with id: {categoryId}");
+            var existingCategory = await _categoryService.GetCategoryById(categoryId);
+            if (existingCategory == null)
+                return NotFound();
 
-                _categoryService.DeleteCategory(existingCategory);
+            _categoryService.DeleteCategory(existingCategory);
 
-                if (await _categoryService.IsSavedToDb())
-                    return Ok($"{existingCategory.CategoryName} category has been deleted");
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                                  $"Error: Unable to delete category: {categoryId}");
-            }
+            if (await _categoryService.IsSavedToDb())
+                return Ok($"'{existingCategory.CategoryName}' category has been deleted");
 
             return BadRequest();
         }
