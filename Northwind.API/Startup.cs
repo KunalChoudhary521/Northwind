@@ -1,11 +1,11 @@
 using System.Data.SQLite;
 using AutoMapper;
+using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Northwind.API.Repositories;
 using Northwind.API.Services;
 using Northwind.Data.Contexts;
@@ -29,7 +29,7 @@ namespace Northwind.API
         {
             services.AddControllers();
             ConfigureSQliteContext(services);
-            services.AddAutoMapper(typeof(Startup));
+            ConfigureThirdPartyDependencies(services);
             ConfigureRepositories(services);
             ConfigureAppServices(services);
         }
@@ -37,10 +37,7 @@ namespace Northwind.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            app.UseProblemDetails();
 
             app.UseHttpsRedirection();
 
@@ -58,6 +55,12 @@ namespace Northwind.API
                 var connString = Configuration.GetConnectionString("NorthWindDB").Replace("~", _env.ContentRootPath);
                 options.UseSqlite(new SQLiteConnection(connString));
             });
+        }
+
+        private void ConfigureThirdPartyDependencies(IServiceCollection services)
+        {
+            services.AddAutoMapper(typeof(Startup));
+            services.AddProblemDetails();
         }
 
         private void ConfigureRepositories(IServiceCollection services)
