@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 using Northwind.API.Models;
 using Northwind.API.Services;
 using Northwind.Data.Entities;
@@ -12,21 +11,23 @@ namespace Northwind.API.Controllers
     [Route("api/[controller]")]
     public class CategoriesController : ControllerBase
     {
-        private readonly CategoryService _categoryService;
+        private readonly ICategoryService _categoryService;
         private readonly IMapper _mapper;
-        private readonly LinkGenerator _linkGenerator;
 
-        public CategoriesController(CategoryService categoryService, IMapper mapper, LinkGenerator linkGenerator)
+        public CategoriesController(ICategoryService categoryService, IMapper mapper)
         {
             _categoryService = categoryService;
             _mapper = mapper;
-            _linkGenerator = linkGenerator;
         }
 
         [HttpGet]
         public async Task<ActionResult<CategoryModel[]>> GetCategories()
         {
             var categories = await _categoryService.GetAllCategories();
+
+            if (categories == null)
+                return NotFound();
+
             var categoryModels = _mapper.Map<CategoryModel[]>(categories);
 
             return categoryModels;
@@ -47,15 +48,18 @@ namespace Northwind.API.Controllers
         [HttpPost]
         public async Task<ActionResult<CategoryModel>> AddCategory(CategoryModel categoryModel)
         {
+            if (await _categoryService.GetCategoryByName(categoryModel.CategoryName) != null)
+                return BadRequest($"'{categoryModel.CategoryName}' already exists");
+
             var category = _mapper.Map<Category>(categoryModel);
             _categoryService.AddCategory(category);
             if (await _categoryService.IsSavedToDb())
             {
-                var categoryPersisted = await _categoryService.GetCategoryByName(categoryModel.CategoryName);
-                var location = _linkGenerator.GetPathByAction("GetCategory", "Categories",
-                    new {categoryId = categoryPersisted.CategoryId});
+                var persistedCategory = await _categoryService.GetCategoryByName(categoryModel.CategoryName);
+                var persistedCategoryModel = _mapper.Map<CategoryModel>(persistedCategory);
 
-                return Created(location, categoryPersisted);
+                return CreatedAtAction("GetCategory", new {categoryId = persistedCategoryModel.CategoryId},
+                                       persistedCategoryModel);
             }
 
             return BadRequest();

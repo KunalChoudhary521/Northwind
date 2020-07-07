@@ -8,7 +8,7 @@ using Northwind.Data.Entities;
 
 namespace Northwind.API.Services
 {
-    public class CategoryService
+    public class CategoryService : ICategoryService
     {
         private readonly IRepository<Category> _categoryRepository;
         private readonly IRepository<Product> _productRepository;
