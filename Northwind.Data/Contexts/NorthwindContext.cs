@@ -24,6 +24,10 @@ namespace Northwind.Data.Contexts
                         .HasIndex(e => new { e.FirstName, e.LastName })
                         .HasName("FullName");
 
+            modelBuilder.Entity<Location>().ToTable("Locations")
+                        .HasIndex(l => l.Address)
+                        .IsUnique();
+
             modelBuilder.Entity<OrderDetail>()
                         .ToTable("Order Details")
                         .HasKey(od => new { od.OrderId, od.ProductId });
