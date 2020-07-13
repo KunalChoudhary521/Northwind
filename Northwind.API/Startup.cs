@@ -1,4 +1,3 @@
-using System.Data.SQLite;
 using AutoMapper;
 using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Builder;
@@ -52,8 +51,8 @@ namespace Northwind.API
         {
             services.AddDbContext<NorthwindContext>(options =>
             {
-                var connString = Configuration.GetConnectionString("NorthWindDB").Replace("~", _env.ContentRootPath);
-                options.UseSqlite(new SQLiteConnection(connString));
+                var connString = Configuration.GetConnectionString("NorthWindDB");
+                options.UseNpgsql(connString);
             });
         }
 
