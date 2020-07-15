@@ -3,5 +3,16 @@ Resource: https://docs.microsoft.com/en-us/ef/core/managing-schemas/migrations/?
 Install dotnet-ef CLI tool using the following command:
 > dotnet tool install --global dotnet-ef
 
-To add an initial migration, run the following command from solution directory:
-> dotnet ef migrations add InitialCreate -p Northwind.Data -s Northwind.API
+Ensure you are in the solution directory
+
+To see all migrations:
+> dotnet ef migrations list -p Northwind.Data -s Northwind.API
+
+To add migration:
+> dotnet ef migrations add <name> -p Northwind.Data -s Northwind.API
+
+To remove previous migration:
+> dotnet ef migrations remove -p Northwind.Data -s Northwind.API
+
+To apply migration to DB:
+> dotnet ef database update -p Northwind.Data -s Northwind.API
