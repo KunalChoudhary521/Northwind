@@ -73,7 +73,7 @@ namespace Northwind.API
         private void ConfigureAppServices(IServiceCollection services)
         {
             services.AddScoped<ICategoryService, CategoryService>();
-            services.AddScoped<IService<Supplier>, SupplierService>();
+            services.AddScoped<ISupplierService, SupplierService>();
         }
     }
 }

@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -7,7 +10,7 @@ using Northwind.Data.Entities;
 
 namespace Northwind.API.Services
 {
-    public class SupplierService : IService<Supplier>
+    public class SupplierService : ISupplierService
     {
         private readonly IRepository<Supplier> _supplierRepository;
         private readonly IRepository<Location> _locationRepository;
@@ -34,7 +37,7 @@ namespace Northwind.API.Services
         public async Task<Supplier> GetById(int supplierId)
         {
             _logger.LogInformation($"Retrieving supplier with id: {supplierId}");
-            return await _supplierRepository.FindByCondition(supplier => supplier.SupplierId == supplierId)
+            return await _supplierRepository.FindByCondition(FindSupplierById(supplierId))
                                             .Include(supplier => supplier.Location)
                                             .FirstOrDefaultAsync();
         }
@@ -64,6 +67,48 @@ namespace Northwind.API.Services
         public async Task<bool> IsSavedToDb()
         {
             return await _supplierRepository.SaveChangesAsync();
+        }
+
+
+        public async Task<ICollection<Product>> GetAllProducts(int supplierId)
+        {
+            _logger.LogInformation($"Retrieving products of supplier with id: {supplierId}");
+            return await _supplierRepository.FindByCondition(FindSupplierById(supplierId))
+                                            .Select(supplier => supplier.Products)
+                                            .FirstOrDefaultAsync();
+        }
+
+        public async Task<Product> GetProductById(int supplierId, int productId)
+        {
+            _logger.LogInformation($"Retrieving product with id: {productId} " +
+                                   $"of supplier with id: {supplierId}");
+
+            Expression<Func<Supplier,Product>> findSupplierProductById =
+                supplier => supplier.Products.FirstOrDefault(p => p.ProductId == productId);
+
+            return await _supplierRepository.FindByCondition(FindSupplierById(supplierId))
+                                            .Select(findSupplierProductById)
+                                            .FirstOrDefaultAsync();
+        }
+
+        public Task<Product> AddProduct(Product product)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void UpdateProduct(Product product)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void DeleteProduct(int productId)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        private static Expression<Func<Supplier, bool>> FindSupplierById(int supplierId)
+        {
+            return supplier => supplier.SupplierId == supplierId;
         }
     }
 }
