@@ -48,11 +48,12 @@ namespace Northwind.API.Controllers
         public async Task<ActionResult<SupplierModel>> AddSupplier(SupplierModel supplierModel)
         {
             var supplier = _mapper.Map<Supplier>(supplierModel);
-            var persistedSupplier = await _supplierService.Add(supplier);
-            if (persistedSupplier != null)
+            _supplierService.Add(supplier);
+            if (await _supplierService.IsSavedToDb())
             {
-                var persistedSupplierModel = _mapper.Map<SupplierModel>(persistedSupplier);
-                return CreatedAtAction("GetSupplier", new {supplierId = persistedSupplierModel.SupplierId},
+                var persistedSupplierModel = _mapper.Map<SupplierModel>(supplier);
+                return CreatedAtAction(nameof(GetSupplier),
+                                       new {supplierId = persistedSupplierModel.SupplierId},
                                        persistedSupplierModel);
             }
 
@@ -66,11 +67,11 @@ namespace Northwind.API.Controllers
             if (oldSupplier == null)
                 return NotFound();
 
-            var updatedSupplier = _mapper.Map(supplierModel, oldSupplier);
-            _supplierService.Update(updatedSupplier);
+            var newSupplier = _mapper.Map(supplierModel, oldSupplier);
+            _supplierService.Update(newSupplier);
 
             if (await _supplierService.IsSavedToDb())
-                return Ok(_mapper.Map<SupplierModel>(updatedSupplier));
+                return Ok(_mapper.Map<SupplierModel>(newSupplier));
 
             return BadRequest();
         }
@@ -82,7 +83,7 @@ namespace Northwind.API.Controllers
             if (existingSupplier == null)
                 return NotFound();
 
-            _supplierService.Delete(existingSupplier);
+            await _supplierService.Delete(existingSupplier);
 
             if(await _supplierService.IsSavedToDb())
                 return Ok($"'{existingSupplier.CompanyName}' supplier has been deleted");
@@ -93,33 +94,91 @@ namespace Northwind.API.Controllers
         [HttpGet("{supplierId:int}/products")]
         public async Task<ActionResult<ProductModel[]>> GetSupplierProducts(int supplierId)
         {
-            var supplier = await _supplierService.GetById(supplierId);
-
-            if (supplier == null)
-                throw new ProblemDetailsException(StatusCodes.Status404NotFound,
-                                                  $"Supplier with id {supplierId} not found");
+            await DoesSupplierExist(supplierId);
 
             var products = await _supplierService.GetAllProducts(supplierId);
-
             return _mapper.Map<ProductModel[]>(products);
         }
 
         [HttpGet("{supplierId:int}/products/{productId:int}")]
         public async Task<ActionResult<ProductModel>> GetSupplierProduct(int supplierId, int productId)
         {
-            var supplier = await _supplierService.GetById(supplierId);
+            await DoesSupplierExist(supplierId);
 
-            if (supplier == null)
+            var product = await GetProduct(supplierId, productId);
+
+            return _mapper.Map<ProductModel>(product);
+        }
+
+        [HttpPost("{supplierId:int}/products")]
+        public async Task<ActionResult<ProductModel>> AddSupplierProduct(int supplierId,
+                                                                         ProductModel productModel)
+        {
+            await DoesSupplierExist(supplierId);
+
+            var product = _mapper.Map<Product>(productModel);
+            _supplierService.AddProduct(supplierId, product);
+            if (await _supplierService.IsSavedToDb())
+            {
+                var persistedProductModel = _mapper.Map<ProductModel>(product);
+                return CreatedAtAction(nameof(GetSupplierProduct),
+                                       new { supplierId, productId = product.ProductId },
+                                       persistedProductModel);
+            }
+
+            return BadRequest();
+        }
+
+        [HttpPut("{supplierId:int}/products/{productId:int}")]
+        public async Task<ActionResult<ProductModel>> UpdateSupplierProduct(int supplierId,
+                                                                            int productId,
+                                                                            ProductModel productModel)
+        {
+            await DoesSupplierExist(supplierId);
+
+            var oldProduct = await GetProduct(supplierId, productId);
+
+            var newProduct = _mapper.Map(productModel, oldProduct);
+            _supplierService.UpdateProduct(supplierId, newProduct);
+
+            if (await _supplierService.IsSavedToDb())
+                return Ok(_mapper.Map<ProductModel>(newProduct));
+
+            return BadRequest();
+        }
+
+        [HttpDelete("{supplierId:int}/products/{productId:int}")]
+        public async Task<ActionResult<ProductModel>> DeleteSupplierProduct(int supplierId,
+                                                                            int productId)
+        {
+            await DoesSupplierExist(supplierId);
+
+            var existingProduct = await GetProduct(supplierId, productId);
+
+            _supplierService.DeleteProduct(supplierId, existingProduct);
+
+            if(await _supplierService.IsSavedToDb())
+                return Ok($"Product with id '{productId}' of supplier " +
+                          $"with id {supplierId} has been deleted");
+
+            return BadRequest();
+        }
+
+        private async Task DoesSupplierExist(int supplierId)
+        {
+            if (await _supplierService.GetById(supplierId) == null)
                 throw new ProblemDetailsException(StatusCodes.Status404NotFound,
                                                   $"Supplier with id {supplierId} not found");
+        }
 
+        private async Task<Product> GetProduct(int supplierId, int productId)
+        {
             var product = await _supplierService.GetProductById(supplierId, productId);
 
             if (product == null)
                 throw new ProblemDetailsException(StatusCodes.Status404NotFound,
                                                   $"Product with id {productId} not found");
-
-            return _mapper.Map<ProductModel>(product);
+            return product;
         }
     }
 }
