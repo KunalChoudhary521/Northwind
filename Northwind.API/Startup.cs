@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Northwind.API.Repositories;
 using Northwind.API.Services;
 using Northwind.Data.Contexts;
@@ -27,10 +29,12 @@ namespace Northwind.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            ConfigureSQliteContext(services);
+            ConfigureDbContext(services);
             ConfigureThirdPartyDependencies(services);
             ConfigureRepositories(services);
             ConfigureAppServices(services);
+            services.AddHealthChecks()
+                    .AddDbContextCheck<NorthwindContext>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -44,15 +48,21 @@ namespace Northwind.API
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapHealthChecks("/api/health");
+            });
         }
 
-        private void ConfigureSQliteContext(IServiceCollection services)
+        private void ConfigureDbContext(IServiceCollection services)
         {
             services.AddDbContext<NorthwindContext>(options =>
             {
                 var connString = Configuration.GetConnectionString("NorthWindDB");
                 options.UseNpgsql(connString);
+                if(_env.IsDevelopment())
+                    options.UseLoggerFactory(LoggerFactory.Create(builder => builder.AddConsole()));
             });
         }
 
