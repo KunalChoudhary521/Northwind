@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +30,8 @@ namespace Northwind.Tests.UnitTests.Controllers
         [Fact]
         public async Task NonExistentCategories_GetCategories_ReturnNotFound()
         {
-            _categoryService.Setup(s => s.GetAllCategories()).Returns(Task.FromResult<Category[]>(null));
+            _categoryService.Setup(s => s.GetAll())
+                            .Returns(Task.FromResult<ICollection<Category>>(null));
 
             var response = await _categoriesController.GetCategories();
 
@@ -38,23 +40,9 @@ namespace Northwind.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task PreExistingCategories_GetCategories_ReturnCategories()
-        {
-            _categoryService.Setup(s => s.GetAllCategories()).Returns(Task.FromResult(new[] { new Category() }));
-
-            var response = await _categoriesController.GetCategories();
-
-            Assert.IsType<ActionResult<CategoryModel[]>>(response);
-            Assert.IsType<CategoryModel[]>(response.Value);
-            Assert.Single(response.Value);
-        }
-
-        [Fact]
         public async Task IdOfNonexistentCategory_GetCategory_ReturnNotFound()
         {
             const int categoryId = -1;
-
-            _categoryService.Setup(s => s.GetCategoryById(categoryId)).Returns(Task.FromResult<Category>(null));
 
             var response = await _categoriesController.GetCategory(categoryId);
 
@@ -67,7 +55,8 @@ namespace Northwind.Tests.UnitTests.Controllers
         {
             const int categoryId = 5;
 
-            _categoryService.Setup(s => s.GetCategoryById(categoryId)).Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(s => s.GetById(categoryId))
+                            .Returns(Task.FromResult(new Category()));
 
             var response = await _categoriesController.GetCategory(categoryId);
 
@@ -129,8 +118,6 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int categoryId = -1;
             var categoryModel = new CategoryModel { Description = "New Description" };
 
-            _categoryService.Setup(s => s.GetCategoryById(categoryId)).Returns(Task.FromResult<Category>(null));
-
             var response = await _categoriesController.UpdateCategory(categoryId, categoryModel);
 
             Assert.IsType<ActionResult<CategoryModel>>(response);
@@ -141,7 +128,11 @@ namespace Northwind.Tests.UnitTests.Controllers
         public async Task CategoryIdAndCategoryModel_UpdateCategory_ReturnUpdatedCategory()
         {
             const int categoryId = 5;
-            var categoryModel = new CategoryModel { CategoryName = "New Name", Description = "New Description" };
+            var categoryModel = new CategoryModel
+            {
+                CategoryName = "New Name",
+                Description = "New Description"
+            };
 
             var oldCategory = new Category
             {
@@ -149,7 +140,9 @@ namespace Northwind.Tests.UnitTests.Controllers
                 CategoryName = "Old Name",
                 Description = "Old Description"
             };
-            _categoryService.Setup(s => s.GetCategoryById(categoryId)).Returns(Task.FromResult(oldCategory));
+
+            _categoryService.Setup(s => s.GetById(categoryId))
+                            .Returns(Task.FromResult(oldCategory));
             _categoryService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
 
             var response = await _categoriesController.UpdateCategory(categoryId, categoryModel);
@@ -168,8 +161,6 @@ namespace Northwind.Tests.UnitTests.Controllers
         {
             const int categoryId = -1;
 
-            _categoryService.Setup(s => s.GetCategoryById(categoryId)).Returns(Task.FromResult<Category>(null));
-
             var response = await _categoriesController.DeleteCategory(categoryId);
 
             Assert.IsType<NotFoundResult>(response);
@@ -182,7 +173,8 @@ namespace Northwind.Tests.UnitTests.Controllers
 
             const int categoryId = 4;
             var existingCategory = new Category { CategoryId = 4, CategoryName = "Delete Category" };
-            _categoryService.Setup(s => s.GetCategoryById(categoryId)).Returns(Task.FromResult(existingCategory));
+            _categoryService.Setup(s => s.GetById(categoryId))
+                            .Returns(Task.FromResult(existingCategory));
             _categoryService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
 
             var response = await _categoriesController.DeleteCategory(categoryId);
