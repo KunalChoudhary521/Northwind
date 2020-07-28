@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -23,13 +24,13 @@ namespace Northwind.API.Services
             _logger = logger;
         }
 
-        public async Task<Category[]> GetAllCategories()
+        public async Task<ICollection<Category>> GetAll()
         {
             _logger.LogInformation("Retrieving all categories");
             return await _categoryRepository.FindAll().ToArrayAsync();
         }
 
-        public async Task<Category> GetCategoryById(int categoryId)
+        public async Task<Category> GetById(int categoryId)
         {
             _logger.LogInformation($"Retrieving category with id: {categoryId}");
             return await _categoryRepository.FindByCondition(cat => cat.CategoryId == categoryId)
@@ -43,19 +44,19 @@ namespace Northwind.API.Services
                                             .FirstOrDefaultAsync();
         }
 
-        public void AddCategory(Category category)
+        public void Add(Category category)
         {
             _logger.LogInformation($"Adding a new category: {category.CategoryName}");
             _categoryRepository.Add(category);
         }
 
-        public void UpdateCategory(Category category)
+        public void Update(Category category)
         {
             _logger.LogInformation($"Updating an existing category: {category.CategoryName}");
             _categoryRepository.Update(category);
         }
 
-        public async void DeleteCategory(Category category)
+        public async void Delete(Category category)
         {
             _logger.LogInformation($"Detach products from category: {category.CategoryName}");
 
@@ -63,9 +64,7 @@ namespace Northwind.API.Services
             var products = await _productRepository.FindByCondition(findByCategoryId).ToArrayAsync();
 
             foreach (var product in products)
-            {
                 product.CategoryId = null;
-            }
 
             _logger.LogInformation($"Deleting a category: {category.CategoryName}");
             _categoryRepository.Delete(category);

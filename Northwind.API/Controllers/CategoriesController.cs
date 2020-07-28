@@ -23,7 +23,7 @@ namespace Northwind.API.Controllers
         [HttpGet]
         public async Task<ActionResult<CategoryModel[]>> GetCategories()
         {
-            var categories = await _categoryService.GetAllCategories();
+            var categories = await _categoryService.GetAll();
 
             if (categories == null)
                 return NotFound();
@@ -36,7 +36,7 @@ namespace Northwind.API.Controllers
         [HttpGet("{categoryId:int}")]
         public async Task<ActionResult<CategoryModel>> GetCategory(int categoryId)
         {
-            var category = await _categoryService.GetCategoryById(categoryId);
+            var category = await _categoryService.GetById(categoryId);
 
             if (category == null)
                 return NotFound();
@@ -52,7 +52,7 @@ namespace Northwind.API.Controllers
                 return BadRequest($"'{categoryModel.CategoryName}' already exists");
 
             var category = _mapper.Map<Category>(categoryModel);
-            _categoryService.AddCategory(category);
+            _categoryService.Add(category);
             if (await _categoryService.IsSavedToDb())
             {
                 var persistedCategory = await _categoryService.GetCategoryByName(categoryModel.CategoryName);
@@ -68,12 +68,12 @@ namespace Northwind.API.Controllers
         [HttpPut("{categoryId:int}")]
         public async Task<ActionResult<CategoryModel>> UpdateCategory(int categoryId, CategoryModel categoryModel)
         {
-            var oldCategory = await _categoryService.GetCategoryById(categoryId);
+            var oldCategory = await _categoryService.GetById(categoryId);
             if (oldCategory == null)
                 return NotFound();
 
             var updatedCategory = _mapper.Map(categoryModel, oldCategory);
-            _categoryService.UpdateCategory(updatedCategory);
+            _categoryService.Update(updatedCategory);
 
             if (await _categoryService.IsSavedToDb())
                 return Ok(_mapper.Map<CategoryModel>(updatedCategory));
@@ -84,11 +84,11 @@ namespace Northwind.API.Controllers
         [HttpDelete("{categoryId:int}")]
         public async Task<ActionResult> DeleteCategory(int categoryId)
         {
-            var existingCategory = await _categoryService.GetCategoryById(categoryId);
+            var existingCategory = await _categoryService.GetById(categoryId);
             if (existingCategory == null)
                 return NotFound();
 
-            _categoryService.DeleteCategory(existingCategory);
+            _categoryService.Delete(existingCategory);
 
             if (await _categoryService.IsSavedToDb())
                 return Ok($"'{existingCategory.CategoryName}' category has been deleted");
