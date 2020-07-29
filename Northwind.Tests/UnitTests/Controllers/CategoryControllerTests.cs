@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
+using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -20,7 +22,11 @@ namespace Northwind.Tests.UnitTests.Controllers
 
         public CategoryControllerTests()
         {
-            var mapperConfig = new MapperConfiguration(config => { config.AddProfile(new CategoryProfile()); });
+            var mapperConfig = new MapperConfiguration(config =>
+            {
+                config.AddProfiles(new Profile[] { new CategoryProfile(),
+                                                   new ProductProfile() });
+            });
             var mapper = mapperConfig.CreateMapper();
             _categoryService = new Mock<ICategoryService>();
 
@@ -169,10 +175,12 @@ namespace Northwind.Tests.UnitTests.Controllers
         [Fact]
         public async Task CategoryId_DeleteCategory_CategoryIsDeleted()
         {
-            //TODO: Add a test to check if related products are deleted
-
             const int categoryId = 4;
-            var existingCategory = new Category { CategoryId = 4, CategoryName = "Delete Category" };
+            var existingCategory = new Category
+            {
+                CategoryId = 4,
+                CategoryName = "Delete Category"
+            };
             _categoryService.Setup(s => s.GetById(categoryId))
                             .Returns(Task.FromResult(existingCategory));
             _categoryService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
@@ -180,6 +188,197 @@ namespace Northwind.Tests.UnitTests.Controllers
             var response = await _categoriesController.DeleteCategory(categoryId);
 
             Assert.IsType<OkObjectResult>(response);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCategory_GetCategoryProducts_ReturnNotFound()
+        {
+            const int categoryId = -1;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _categoriesController.GetCategoryProducts(categoryId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("category", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCategory_GetCategoryProduct_ReturnNotFound()
+        {
+            const int categoryId = -1;
+            const int productId = 7;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _categoriesController.GetCategoryProduct(categoryId, productId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("category", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentProduct_GetCategoryProduct_ReturnNotFound()
+        {
+            const int categoryId = 3;
+            const int productId = -1;
+
+            _categoryService.Setup(c => c.GetById(categoryId))
+                            .Returns(Task.FromResult(new Category()));
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _categoriesController.GetCategoryProduct(categoryId, productId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("product", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCategory_AddCategoryProduct_ReturnNotFound()
+        {
+            const int categoryId = -1;
+            var productModel = new ProductModel();
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _categoriesController.AddCategoryProduct(categoryId, productModel));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("category", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task FailedToSaveNewProduct_AddCategoryProduct_ReturnBadRequest()
+        {
+            const int categoryId = -1;
+            var productModel = new ProductModel();
+
+            _categoryService.Setup(c => c.GetById(categoryId))
+                            .Returns(Task.FromResult(new Category()));
+
+            var response = await _categoriesController.AddCategoryProduct(categoryId, productModel);
+
+            Assert.IsType<ActionResult<ProductModel>>(response);
+            Assert.IsType<BadRequestResult>(response.Result);
+            _categoryService.Verify(c => c.AddEntity(categoryId, It.IsAny<Product>()));
+        }
+
+        [Fact]
+        public async Task ProductModel_AddCategoryProduct_ResponseContainsLocationInHeader()
+        {
+            const int categoryId = 4;
+            var productModel = new ProductModel();
+
+            _categoryService.Setup(s => s.GetById(categoryId))
+                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
+
+            var response = await _categoriesController.AddCategoryProduct(categoryId, productModel);
+
+            Assert.IsType<ActionResult<ProductModel>>(response);
+            var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(response.Result);
+
+            Assert.IsType<ProductModel>(createdAtActionResult.Value);
+            Assert.Equal(StatusCodes.Status201Created, createdAtActionResult.StatusCode);
+            Assert.Equal(2, createdAtActionResult.RouteValues.Keys.Count);
+            Assert.Contains("categoryId", createdAtActionResult.RouteValues.Keys);
+            Assert.Contains("productId", createdAtActionResult.RouteValues.Keys);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCategory_UpdateCategoryProduct_ReturnNotFound()
+        {
+            const int categoryId = -1;
+            const int productId = 6;
+            var productModel = new ProductModel();
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _categoriesController.UpdateCategoryProduct(categoryId, productId, productModel));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("category", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentProduct_UpdateCategoryProduct_ReturnNotFound()
+        {
+            const int categoryId = 3;
+            const int productId = -1;
+            var productModel = new ProductModel();
+
+            _categoryService.Setup(c => c.GetById(categoryId))
+                            .Returns(Task.FromResult(new Category()));
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _categoriesController.UpdateCategoryProduct(categoryId, productId, productModel));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("product", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task FailedToSaveUpdatedProduct_UpdateCategoryProduct_ReturnBadRequest()
+        {
+            const int categoryId = 9;
+            const int productId = 13;
+            var productModel = new ProductModel();
+
+            _categoryService.Setup(c => c.GetById(categoryId))
+                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(s => s.GetEntityById(categoryId, productId))
+                            .Returns(Task.FromResult(new Product()));
+
+            var response = await _categoriesController.UpdateCategoryProduct(categoryId,
+                                                                             productId,
+                                                                             productModel);
+
+            Assert.IsType<ActionResult<ProductModel>>(response);
+            Assert.IsType<BadRequestResult>(response.Result);
+            _categoryService.Verify(c => c.UpdateEntity(categoryId, It.IsAny<Product>()));
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCategory_DeleteCategoryProduct_ReturnNotFound()
+        {
+            const int categoryId = -1;
+            const int productId = 10;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _categoriesController.DeleteCategoryProduct(categoryId, productId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("category", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentProduct_DeleteCategoryProduct_ReturnNotFound()
+        {
+            const int categoryId = 3;
+            const int productId = -1;
+
+            _categoryService.Setup(c => c.GetById(categoryId))
+                            .Returns(Task.FromResult(new Category()));
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _categoriesController.DeleteCategoryProduct(categoryId, productId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("product", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task FailedToSaveChangesAfterDelete_DeleteCategoryProduct_ReturnBadRequest()
+        {
+            const int categoryId = 8;
+            const int productId = 2;
+
+            _categoryService.Setup(c => c.GetById(categoryId))
+                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(s => s.GetEntityById(categoryId, productId))
+                            .Returns(Task.FromResult(new Product()));
+
+            var response = await _categoriesController.DeleteCategoryProduct(categoryId, productId);
+
+            Assert.IsType<ActionResult<ProductModel>>(response);
+            Assert.IsType<BadRequestResult>(response.Result);
+            _categoryService.Verify(c => c.DeleteEntity(categoryId, It.IsAny<Product>()));
         }
     }
 }
