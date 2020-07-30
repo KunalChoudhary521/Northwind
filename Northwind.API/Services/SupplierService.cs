@@ -15,12 +15,12 @@ namespace Northwind.API.Services
         private readonly IRepository<Supplier> _supplierRepository;
         private readonly IRepository<Location> _locationRepository;
         private readonly IRepository<Product> _productRepository;
-        private readonly ILogger<ISupplierService> _logger;
+        private readonly ILogger<SupplierService> _logger;
 
         public SupplierService(IRepository<Supplier> supplierRepository,
                                IRepository<Location> locationRepository,
                                IRepository<Product> productRepository,
-                               ILogger<ISupplierService> logger)
+                               ILogger<SupplierService> logger)
         {
             _supplierRepository = supplierRepository;
             _locationRepository = locationRepository;
@@ -76,14 +76,14 @@ namespace Northwind.API.Services
             return await _supplierRepository.SaveChangesAsync();
         }
 
-        public async Task<ICollection<Product>> GetAllProducts(int supplierId)
+        public async Task<ICollection<Product>> GetAllEntities(int supplierId)
         {
             _logger.LogInformation($"Retrieving products of supplier with id: {supplierId}");
             return await _productRepository.FindByCondition(product => product.SupplierId == supplierId)
                                            .ToArrayAsync();
         }
 
-        public async Task<Product> GetProductById(int supplierId, int productId)
+        public async Task<Product> GetEntityById(int supplierId, int productId)
         {
             _logger.LogInformation($"Retrieving product with id {productId} " +
                                    $"of supplier with id: {supplierId}");
@@ -91,7 +91,7 @@ namespace Northwind.API.Services
             return await QueryProductById(supplierId, productId).FirstOrDefaultAsync();
         }
 
-        public void AddProduct(int supplierId, Product product)
+        public void AddEntity(int supplierId, Product product)
         {
             _logger.LogInformation($"Adding product {product.ProductName}" +
                                    $" to supplier with id: {supplierId}");
@@ -101,7 +101,7 @@ namespace Northwind.API.Services
             _productRepository.Add(product);
         }
 
-        public void UpdateProduct(int supplierId, Product product)
+        public void UpdateEntity(int supplierId, Product product)
         {
             _logger.LogInformation($"Updating product {product.ProductName}" +
                                    $" from supplier with id: {supplierId}");
@@ -111,7 +111,7 @@ namespace Northwind.API.Services
             _productRepository.Update(product);
         }
 
-        public void DeleteProduct(int supplierId, Product product)
+        public void DeleteEntity(int supplierId, Product product)
         {
             _logger.LogInformation($"Deleting product with id ${product.ProductId}" +
                                    $" from supplier with id: {supplierId}");

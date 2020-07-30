@@ -96,7 +96,7 @@ namespace Northwind.API.Controllers
         {
             await DoesSupplierExist(supplierId);
 
-            var products = await _supplierService.GetAllProducts(supplierId);
+            var products = await _supplierService.GetAllEntities(supplierId);
             return _mapper.Map<ProductModel[]>(products);
         }
 
@@ -117,7 +117,7 @@ namespace Northwind.API.Controllers
             await DoesSupplierExist(supplierId);
 
             var product = _mapper.Map<Product>(productModel);
-            _supplierService.AddProduct(supplierId, product);
+            _supplierService.AddEntity(supplierId, product);
             if (await _supplierService.IsSavedToDb())
             {
                 var persistedProductModel = _mapper.Map<ProductModel>(product);
@@ -139,7 +139,7 @@ namespace Northwind.API.Controllers
             var oldProduct = await GetProduct(supplierId, productId);
 
             var newProduct = _mapper.Map(productModel, oldProduct);
-            _supplierService.UpdateProduct(supplierId, newProduct);
+            _supplierService.UpdateEntity(supplierId, newProduct);
 
             if (await _supplierService.IsSavedToDb())
                 return Ok(_mapper.Map<ProductModel>(newProduct));
@@ -155,7 +155,7 @@ namespace Northwind.API.Controllers
 
             var existingProduct = await GetProduct(supplierId, productId);
 
-            _supplierService.DeleteProduct(supplierId, existingProduct);
+            _supplierService.DeleteEntity(supplierId, existingProduct);
 
             if(await _supplierService.IsSavedToDb())
                 return Ok($"Product with id '{productId}' of supplier " +
@@ -173,7 +173,7 @@ namespace Northwind.API.Controllers
 
         private async Task<Product> GetProduct(int supplierId, int productId)
         {
-            var product = await _supplierService.GetProductById(supplierId, productId);
+            var product = await _supplierService.GetEntityById(supplierId, productId);
 
             if (product == null)
                 throw new ProblemDetailsException(StatusCodes.Status404NotFound,
