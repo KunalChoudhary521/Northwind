@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -56,15 +55,14 @@ namespace Northwind.API.Services
             _categoryRepository.Update(category);
         }
 
-        public async void Delete(Category category)
+        public async Task Delete(Category category)
         {
             _logger.LogInformation($"Detach products from category: {category.CategoryName}");
 
-            Expression<Func<Product, bool>> findByCategoryId = product => product.CategoryId == category.CategoryId;
-            var products = await _productRepository.FindByCondition(findByCategoryId).ToArrayAsync();
+            await _productRepository.FindByCondition(p => p.CategoryId == category.CategoryId)
+                                    .ForEachAsync(p => p.CategoryId = null);
 
-            foreach (var product in products)
-                product.CategoryId = null;
+            await _productRepository.SaveChangesAsync();
 
             _logger.LogInformation($"Deleting a category: {category.CategoryName}");
             _categoryRepository.Delete(category);
@@ -73,6 +71,54 @@ namespace Northwind.API.Services
         public async Task<bool> IsSavedToDb()
         {
             return await _categoryRepository.SaveChangesAsync();
+        }
+
+        public async Task<ICollection<Product>> GetAllEntities(int categoryId)
+        {
+            _logger.LogInformation($"Retrieving products of category with id: {categoryId}");
+            return await QueryProductsById(categoryId).ToArrayAsync();
+        }
+
+        public async Task<Product> GetEntityById(int categoryId, int productId)
+        {
+            _logger.LogInformation($"Retrieving product with id {productId} " +
+                                   $"of category with id: {categoryId}");
+            return await QueryProductsById(categoryId)
+                            .FirstOrDefaultAsync(product => product.ProductId == productId);
+        }
+
+        public void AddEntity(int categoryId, Product product)
+        {
+            _logger.LogInformation($"Adding product {product.ProductName}" +
+                                   $" to category with id: {categoryId}");
+
+            // Attach product to category
+            product.CategoryId = categoryId;
+            _productRepository.Add(product);
+        }
+
+        public void UpdateEntity(int categoryId, Product product)
+        {
+            _logger.LogInformation($"Updating product {product.ProductName}" +
+                                   $" to category with id: {categoryId}");
+
+            // Attach product to category
+            product.CategoryId = categoryId;
+            _productRepository.Update(product);
+        }
+
+        public void DeleteEntity(int categoryId, Product product)
+        {
+            _logger.LogInformation($"Deleting product with id ${product.ProductId}" +
+                                   $" from category with id: {categoryId}");
+
+            // Detach product from category, but retain the product in DB
+            product.CategoryId = null;
+        }
+
+        private IQueryable<Product> QueryProductsById(int categoryId)
+        {
+            return _productRepository.FindByCondition(product => product.CategoryId == categoryId);
         }
     }
 }

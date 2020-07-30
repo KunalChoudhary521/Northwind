@@ -3,7 +3,7 @@ using Northwind.Data.Entities;
 
 namespace Northwind.API.Services
 {
-    public interface ICategoryService : IService<Category>
+    public interface ICategoryService : IService<Category>, IRelatedData<Product>
     {
         Task<Category> GetCategoryByName(string categoryName);
     }
