@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -26,7 +25,7 @@ namespace Northwind.Tests.UnitTests.Services
             _supplierRepository = new Mock<IRepository<Supplier>>();
             _locationRepository = new Mock<IRepository<Location>>();
             _productRepository = new Mock<IRepository<Product>>();
-            var logger = new Mock<ILogger<ISupplierService>>();
+            var logger = new Mock<ILogger<SupplierService>>();
 
             _supplierService = new SupplierService(_supplierRepository.Object,
                                                    _locationRepository.Object,
@@ -65,7 +64,7 @@ namespace Northwind.Tests.UnitTests.Services
             const int supplierId = 5;
             var product = new Product();
 
-            _supplierService.AddProduct(supplierId, product);
+            _supplierService.AddEntity(supplierId, product);
 
             Assert.Equal(5, product.SupplierId);
         }
@@ -76,7 +75,7 @@ namespace Northwind.Tests.UnitTests.Services
             const int supplierId = 7;
             var product = new Product();
 
-            _supplierService.UpdateProduct(supplierId, product);
+            _supplierService.UpdateEntity(supplierId, product);
 
             Assert.Equal(7, product.SupplierId);
         }
@@ -87,7 +86,7 @@ namespace Northwind.Tests.UnitTests.Services
             const int supplierId = 7;
             var product = new Product();
 
-            _supplierService.DeleteProduct(supplierId, product);
+            _supplierService.DeleteEntity(supplierId, product);
 
             Assert.Null(product.SupplierId);
         }

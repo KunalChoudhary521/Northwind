@@ -192,7 +192,7 @@ namespace Northwind.Tests.UnitTests.Controllers
 
             Assert.IsType<ActionResult<ProductModel>>(response);
             Assert.IsType<BadRequestResult>(response.Result);
-            _supplierService.Verify(s => s.AddProduct(supplierId, It.IsAny<Product>()));
+            _supplierService.Verify(s => s.AddEntity(supplierId, It.IsAny<Product>()));
         }
 
         [Fact]
@@ -257,7 +257,7 @@ namespace Northwind.Tests.UnitTests.Controllers
 
             _supplierService.Setup(s => s.GetById(supplierId))
                             .Returns(Task.FromResult(new Supplier()));
-            _supplierService.Setup(s => s.GetProductById(supplierId, productId))
+            _supplierService.Setup(s => s.GetEntityById(supplierId, productId))
                             .Returns(Task.FromResult(new Product()));
 
             var response = await _suppliersController.UpdateSupplierProduct(supplierId,
@@ -266,7 +266,7 @@ namespace Northwind.Tests.UnitTests.Controllers
 
             Assert.IsType<ActionResult<ProductModel>>(response);
             Assert.IsType<BadRequestResult>(response.Result);
-            _supplierService.Verify(s => s.UpdateProduct(supplierId, It.IsAny<Product>()));
+            _supplierService.Verify(s => s.UpdateEntity(supplierId, It.IsAny<Product>()));
         }
 
         [Fact]
@@ -306,14 +306,14 @@ namespace Northwind.Tests.UnitTests.Controllers
 
             _supplierService.Setup(s => s.GetById(supplierId))
                             .Returns(Task.FromResult(new Supplier()));
-            _supplierService.Setup(s => s.GetProductById(supplierId, productId))
+            _supplierService.Setup(s => s.GetEntityById(supplierId, productId))
                             .Returns(Task.FromResult(new Product()));
 
             var response = await _suppliersController.DeleteSupplierProduct(supplierId, productId);
 
             Assert.IsType<ActionResult<ProductModel>>(response);
             Assert.IsType<BadRequestResult>(response.Result);
-            _supplierService.Verify(s => s.DeleteProduct(supplierId, It.IsAny<Product>()));
+            _supplierService.Verify(s => s.DeleteEntity(supplierId, It.IsAny<Product>()));
         }
     }
 }
