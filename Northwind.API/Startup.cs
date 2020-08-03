@@ -78,12 +78,14 @@ namespace Northwind.API
             services.AddScoped<IRepository<Product>, ProductRepository>();
             services.AddScoped<IRepository<Location>, LocationRepository>();
             services.AddScoped<IRepository<Supplier>, SupplierRepository>();
+            services.AddScoped<IRepository<Customer>, CustomerRepository>();
         }
 
         private void ConfigureAppServices(IServiceCollection services)
         {
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ISupplierService, SupplierService>();
+            services.AddScoped<ICustomerService, CustomerService>();
         }
     }
 }
