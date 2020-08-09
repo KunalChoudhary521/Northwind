@@ -1,11 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
+using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Northwind.API.Controllers;
 using Northwind.API.Models;
+using Northwind.API.Models.Orders;
 using Northwind.API.Profiles;
 using Northwind.API.Services;
 using Northwind.Data.Entities;
@@ -23,7 +26,8 @@ namespace Northwind.Tests.UnitTests.Controllers
             var mapperConfig = new MapperConfiguration(config =>
             {
                 config.AddProfiles(new Profile[] { new CustomerProfile(),
-                                                   new LocationProfile() });
+                                                   new LocationProfile(),
+                                                   new OrderProfile() });
             });
             var mapper = mapperConfig.CreateMapper();
             _customerService = new Mock<ICustomerService>();
@@ -130,6 +134,205 @@ namespace Northwind.Tests.UnitTests.Controllers
 
             Assert.IsType<BadRequestResult>(response);
             _customerService.Verify(c => c.Delete(It.IsAny<Customer>()));
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCustomer_GetCustomerOrders_ReturnNotFound()
+        {
+            const int customerId = -1;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _customerController.GetCustomerOrders(customerId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("customer", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCustomer_GetCustomerOrder_ReturnNotFound()
+        {
+            const int customerId = -1;
+            const int orderId = 6;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _customerController.GetCustomerOrder(customerId, orderId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("customer", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentOrder_GetCustomerOrder_ReturnNotFound()
+        {
+            const int customerId = 2;
+            const int orderId = -5;
+
+            _customerService.Setup(c => c.GetById(customerId)).ReturnsAsync(new Customer());
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _customerController.GetCustomerOrder(customerId, orderId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("order", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCustomer_AddCustomerOrder_ReturnNotFound()
+        {
+            const int customerId = -1;
+            var orderModel = new OrderRequestModel();
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _customerController.AddCustomerOrder(customerId, orderModel));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("customer", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task FailedToSaveNewOrder_AddCustomerOrder_ReturnBadRequest()
+        {
+            const int customerId = 2;
+            var orderModel = new OrderRequestModel();
+
+            _customerService.Setup(c => c.GetById(customerId)).ReturnsAsync(new Customer());
+
+            var response = await _customerController.AddCustomerOrder(customerId, orderModel);
+
+            Assert.IsType<ActionResult<OrderResponseModel>>(response);
+            Assert.IsType<BadRequestResult>(response.Result);
+            _customerService.Verify(c => c.AddEntity(It.IsAny<Customer>(), It.IsAny<Order>()));
+        }
+
+        [Fact]
+        public async Task OrderRequestModel_AddCustomerOrder_ResponseContainsLocationInHeader()
+        {
+            const int customerId = 2;
+            var orderModel = new OrderRequestModel();
+
+            _customerService.Setup(c => c.GetById(customerId)).ReturnsAsync(new Customer());
+            _customerService.Setup(c => c.IsSavedToDb()).ReturnsAsync(true);
+
+            var response = await _customerController.AddCustomerOrder(customerId, orderModel);
+
+            Assert.IsType<ActionResult<OrderResponseModel>>(response);
+            var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(response.Result);
+
+            Assert.IsType<OrderResponseModel>(createdAtActionResult.Value);
+            Assert.Equal(StatusCodes.Status201Created, createdAtActionResult.StatusCode);
+            Assert.Equal(2, createdAtActionResult.RouteValues.Keys.Count);
+            Assert.Contains("customerId", createdAtActionResult.RouteValues.Keys);
+            Assert.Contains("orderId", createdAtActionResult.RouteValues.Keys);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCustomer_UpdateCustomerOrder_ReturnNotFound()
+        {
+            const int customerId = -1;
+            const int orderId = 7;
+            var orderModel = new OrderModelBase();
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _customerController.UpdateCustomerOrder(customerId, orderId, orderModel));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("customer", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentOrder_UpdateCustomerOrder_ReturnNotFound()
+        {
+            const int customerId = 14;
+            const int orderId = -1;
+            var orderModel = new OrderModelBase();
+
+            _customerService.Setup(c => c.GetById(customerId)).ReturnsAsync(new Customer());
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _customerController.UpdateCustomerOrder(customerId, orderId, orderModel));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("order", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task OrderWithShippedDate_UpdateCustomerOrder_ReturnBadRequest()
+        {
+            const int customerId = 14;
+            const int orderId = 5;
+            var orderModel = new OrderModelBase { RequiredDate = DateTimeOffset.Now };
+
+            var mockOrder = new Order { ShippedDate = DateTimeOffset.UtcNow };
+            _customerService.Setup(c => c.GetById(customerId)).ReturnsAsync(new Customer());
+            _customerService.Setup(c => c.GetEntityById(customerId, orderId)).ReturnsAsync(mockOrder);
+
+            var response = await _customerController.UpdateCustomerOrder(customerId, orderId, orderModel);
+
+            Assert.IsType<ActionResult<OrderResponseModel>>(response);
+            var result = Assert.IsType<BadRequestObjectResult>(response.Result);
+            Assert.NotNull(result.Value);
+        }
+
+        [Fact]
+        public async Task FailedToSaveUpdatedOrder_UpdateCustomerOrder_ReturnBadRequest()
+        {
+            const int customerId = 4;
+            const int orderId = 2;
+            var orderModel = new OrderModelBase { RequiredDate = DateTimeOffset.Now };
+
+            _customerService.Setup(c => c.GetById(customerId)).ReturnsAsync(new Customer());
+            _customerService.Setup(c => c.GetEntityById(customerId, orderId))
+                            .ReturnsAsync(new Order());
+
+            var response = await _customerController.UpdateCustomerOrder(customerId, orderId, orderModel);
+
+            Assert.IsType<ActionResult<OrderResponseModel>>(response);
+            Assert.IsType<BadRequestResult>(response.Result);
+            _customerService.Verify(c => c.UpdateEntity(customerId, It.IsAny<Order>()));
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentCustomer_DeleteCustomerOrder_ReturnNotFound()
+        {
+            const int customerId = -1;
+            const int orderId = 8;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _customerController.DeleteCustomerOrder(customerId, orderId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("customer", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonexistentOrder_DeleteCustomerOrder_ReturnNotFound()
+        {
+            const int customerId = 4;
+            const int orderId = -1;
+
+            _customerService.Setup(c => c.GetById(customerId)).ReturnsAsync(new Customer());
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _customerController.DeleteCustomerOrder(customerId, orderId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("order", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task FailedToSaveChangesAfterDelete_DeleteCustomerOrder_ReturnBadRequest()
+        {
+            const int customerId = 4;
+            const int orderId = 2;
+
+            _customerService.Setup(c => c.GetById(customerId)).ReturnsAsync(new Customer());
+            _customerService.Setup(c => c.GetEntityById(customerId, orderId))
+                            .ReturnsAsync(new Order());
+
+            var response = await _customerController.DeleteCustomerOrder(customerId, orderId);
+
+            Assert.IsType<BadRequestResult>(response);
+            _customerService.Verify(c => c.DeleteEntity(customerId, It.IsAny<Order>()));
         }
     }
 }
