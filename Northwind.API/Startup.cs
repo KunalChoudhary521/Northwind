@@ -79,6 +79,7 @@ namespace Northwind.API
             services.AddScoped<IRepository<Location>, LocationRepository>();
             services.AddScoped<IRepository<Supplier>, SupplierRepository>();
             services.AddScoped<IRepository<Customer>, CustomerRepository>();
+            services.AddScoped<IRepository<Order>, OrderRepository>();
         }
 
         private void ConfigureAppServices(IServiceCollection services)
