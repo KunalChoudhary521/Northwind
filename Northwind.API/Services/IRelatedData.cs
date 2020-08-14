@@ -7,7 +7,6 @@ namespace Northwind.API.Services
     {
         Task<ICollection<T>> GetAllEntities(int parentId);
         Task<T> GetEntityById(int parentId, int childId);
-        void AddEntity(int parentId, T child);
         void UpdateEntity(int parentId, T child);
         void DeleteEntity(int parentId, T child);
     }

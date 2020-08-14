@@ -2,7 +2,7 @@
 
 namespace Northwind.API.Services
 {
-    public interface ISupplierService : IService<Supplier>, IRelatedData<Product>
+    public interface ISupplierService : IService<Supplier>, IRelatedData<Product>, IAddEntity<Product>
     {
     }
 }
