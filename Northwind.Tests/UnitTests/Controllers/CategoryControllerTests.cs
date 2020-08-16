@@ -61,8 +61,7 @@ namespace Northwind.Tests.UnitTests.Controllers
         {
             const int categoryId = 5;
 
-            _categoryService.Setup(s => s.GetById(categoryId))
-                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(s => s.GetById(categoryId)).ReturnsAsync(new Category());
 
             var response = await _categoriesController.GetCategory(categoryId);
 
@@ -88,7 +87,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             var categoryModel = new CategoryModel { CategoryName = "Existing Category" };
 
             _categoryService.Setup(s => s.GetCategoryByName(It.IsAny<string>()))
-                            .Returns(Task.FromResult(new Category()));
+                            .ReturnsAsync(new Category());
 
             var response = await _categoriesController.AddCategory(categoryModel);
 
@@ -102,10 +101,10 @@ namespace Northwind.Tests.UnitTests.Controllers
             var categoryModel = new CategoryModel { CategoryName = "New Category" };
 
             var category = new Category { CategoryId = 3, CategoryName = "New Category" };
-            _categoryService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
+            _categoryService.Setup(s => s.IsSavedToDb()).ReturnsAsync(true);
             _categoryService.SetupSequence(s => s.GetCategoryByName(It.IsAny<string>()))
                             .Returns(Task.FromResult<Category>(null))
-                            .Returns(Task.FromResult(category));
+                            .ReturnsAsync(category);
 
             var response = await _categoriesController.AddCategory(categoryModel);
 
@@ -147,9 +146,8 @@ namespace Northwind.Tests.UnitTests.Controllers
                 Description = "Old Description"
             };
 
-            _categoryService.Setup(s => s.GetById(categoryId))
-                            .Returns(Task.FromResult(oldCategory));
-            _categoryService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
+            _categoryService.Setup(s => s.GetById(categoryId)).ReturnsAsync(oldCategory);
+            _categoryService.Setup(s => s.IsSavedToDb()).ReturnsAsync(true);
 
             var response = await _categoriesController.UpdateCategory(categoryId, categoryModel);
 
@@ -181,9 +179,8 @@ namespace Northwind.Tests.UnitTests.Controllers
                 CategoryId = 4,
                 CategoryName = "Delete Category"
             };
-            _categoryService.Setup(s => s.GetById(categoryId))
-                            .Returns(Task.FromResult(existingCategory));
-            _categoryService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
+            _categoryService.Setup(s => s.GetById(categoryId)).ReturnsAsync(existingCategory);
+            _categoryService.Setup(s => s.IsSavedToDb()).ReturnsAsync(true);
 
             var response = await _categoriesController.DeleteCategory(categoryId);
 
@@ -221,8 +218,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int categoryId = 3;
             const int productId = -1;
 
-            _categoryService.Setup(c => c.GetById(categoryId))
-                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(c => c.GetById(categoryId)).ReturnsAsync(new Category());
 
             var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
                 _categoriesController.GetCategoryProduct(categoryId, productId));
@@ -250,8 +246,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int categoryId = -1;
             var productModel = new ProductModel();
 
-            _categoryService.Setup(c => c.GetById(categoryId))
-                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(c => c.GetById(categoryId)).ReturnsAsync(new Category());
 
             var response = await _categoriesController.AddCategoryProduct(categoryId, productModel);
 
@@ -266,9 +261,8 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int categoryId = 4;
             var productModel = new ProductModel();
 
-            _categoryService.Setup(s => s.GetById(categoryId))
-                            .Returns(Task.FromResult(new Category()));
-            _categoryService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
+            _categoryService.Setup(s => s.GetById(categoryId)).ReturnsAsync(new Category());
+            _categoryService.Setup(s => s.IsSavedToDb()).ReturnsAsync(true);
 
             var response = await _categoriesController.AddCategoryProduct(categoryId, productModel);
 
@@ -303,8 +297,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int productId = -1;
             var productModel = new ProductModel();
 
-            _categoryService.Setup(c => c.GetById(categoryId))
-                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(c => c.GetById(categoryId)).ReturnsAsync(new Category());
 
             var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
                 _categoriesController.UpdateCategoryProduct(categoryId, productId, productModel));
@@ -320,10 +313,9 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int productId = 13;
             var productModel = new ProductModel();
 
-            _categoryService.Setup(c => c.GetById(categoryId))
-                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(c => c.GetById(categoryId)).ReturnsAsync(new Category());
             _categoryService.Setup(s => s.GetEntityById(categoryId, productId))
-                            .Returns(Task.FromResult(new Product()));
+                            .ReturnsAsync(new Product());
 
             var response = await _categoriesController.UpdateCategoryProduct(categoryId,
                                                                              productId,
@@ -353,8 +345,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int categoryId = 3;
             const int productId = -1;
 
-            _categoryService.Setup(c => c.GetById(categoryId))
-                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(c => c.GetById(categoryId)).ReturnsAsync(new Category());
 
             var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
                 _categoriesController.DeleteCategoryProduct(categoryId, productId));
@@ -369,15 +360,13 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int categoryId = 8;
             const int productId = 2;
 
-            _categoryService.Setup(c => c.GetById(categoryId))
-                            .Returns(Task.FromResult(new Category()));
+            _categoryService.Setup(c => c.GetById(categoryId)).ReturnsAsync(new Category());
             _categoryService.Setup(s => s.GetEntityById(categoryId, productId))
-                            .Returns(Task.FromResult(new Product()));
+                            .ReturnsAsync(new Product());
 
             var response = await _categoriesController.DeleteCategoryProduct(categoryId, productId);
 
-            Assert.IsType<ActionResult<ProductModel>>(response);
-            Assert.IsType<BadRequestResult>(response.Result);
+            Assert.IsType<BadRequestResult>(response);
             _categoryService.Verify(c => c.DeleteEntity(categoryId, It.IsAny<Product>()));
         }
     }

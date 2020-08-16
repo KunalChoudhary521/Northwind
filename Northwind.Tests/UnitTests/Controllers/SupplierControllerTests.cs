@@ -37,8 +37,7 @@ namespace Northwind.Tests.UnitTests.Controllers
         [Fact]
         public async Task NonExistentSuppliers_GetSuppliers_ReturnNotFound()
         {
-            _supplierService.Setup(s => s.GetAll())
-                            .Returns(Task.FromResult<ICollection<Supplier>>(null));
+            _supplierService.Setup(s => s.GetAll()).Returns(Task.FromResult<ICollection<Supplier>>(null));
 
             var response = await _suppliersController.GetSuppliers();
 
@@ -74,7 +73,7 @@ namespace Northwind.Tests.UnitTests.Controllers
         {
             var supplierModel = new SupplierModel();
 
-            _supplierService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
+            _supplierService.Setup(s => s.IsSavedToDb()).ReturnsAsync(true);
 
             var response = await _suppliersController.AddSupplier(supplierModel);
 
@@ -99,14 +98,12 @@ namespace Northwind.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task FailedToSaveUpdateSupplier_UpdateSupplier_ReturnBadRequest()
+        public async Task FailedToSaveUpdatedSupplier_UpdateSupplier_ReturnBadRequest()
         {
             const int supplierId = 40;
             var supplierModel = new SupplierModel();
 
-            _supplierService.Setup(s => s.GetById(supplierId))
-                            .Returns(Task.FromResult(new Supplier()));
-            _supplierService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(false));
+            _supplierService.Setup(s => s.GetById(supplierId)).ReturnsAsync(new Supplier());
 
             var response = await _suppliersController.UpdateSupplier(supplierId, supplierModel);
 
@@ -156,8 +153,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int supplierId = 10;
             const int productId = -1;
 
-            _supplierService.Setup(s => s.GetById(supplierId))
-                            .Returns(Task.FromResult(new Supplier()));
+            _supplierService.Setup(s => s.GetById(supplierId)).ReturnsAsync(new Supplier());
 
             var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
                 _suppliersController.GetSupplierProduct(supplierId, productId));
@@ -185,8 +181,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int supplierId = 10;
             var productModel = new ProductModel();
 
-            _supplierService.Setup(s => s.GetById(supplierId))
-                            .Returns(Task.FromResult(new Supplier()));
+            _supplierService.Setup(s => s.GetById(supplierId)).ReturnsAsync(new Supplier());
 
             var response = await _suppliersController.AddSupplierProduct(supplierId, productModel);
 
@@ -201,9 +196,8 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int supplierId = 10;
             var productModel = new ProductModel();
 
-            _supplierService.Setup(s => s.GetById(supplierId))
-                            .Returns(Task.FromResult(new Supplier()));
-            _supplierService.Setup(s => s.IsSavedToDb()).Returns(Task.FromResult(true));
+            _supplierService.Setup(s => s.GetById(supplierId)).ReturnsAsync(new Supplier());
+            _supplierService.Setup(s => s.IsSavedToDb()).ReturnsAsync(true);
 
             var response = await _suppliersController.AddSupplierProduct(supplierId, productModel);
 
@@ -238,8 +232,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int productId = -1;
             var productModel = new ProductModel();
 
-            _supplierService.Setup(s => s.GetById(supplierId))
-                            .Returns(Task.FromResult(new Supplier()));
+            _supplierService.Setup(s => s.GetById(supplierId)).ReturnsAsync(new Supplier());
 
             var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
                 _suppliersController.UpdateSupplierProduct(supplierId, productId, productModel));
@@ -255,10 +248,8 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int productId = 2;
             var productModel = new ProductModel();
 
-            _supplierService.Setup(s => s.GetById(supplierId))
-                            .Returns(Task.FromResult(new Supplier()));
-            _supplierService.Setup(s => s.GetEntityById(supplierId, productId))
-                            .Returns(Task.FromResult(new Product()));
+            _supplierService.Setup(s => s.GetById(supplierId)).ReturnsAsync(new Supplier());
+            _supplierService.Setup(s => s.GetEntityById(supplierId, productId)).ReturnsAsync(new Product());
 
             var response = await _suppliersController.UpdateSupplierProduct(supplierId,
                                                                             productId,
@@ -288,8 +279,7 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int supplierId = 10;
             const int productId = -1;
 
-            _supplierService.Setup(s => s.GetById(supplierId))
-                            .Returns(Task.FromResult(new Supplier()));
+            _supplierService.Setup(s => s.GetById(supplierId)).ReturnsAsync(new Supplier());
 
             var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
                 _suppliersController.DeleteSupplierProduct(supplierId, productId));
@@ -304,15 +294,12 @@ namespace Northwind.Tests.UnitTests.Controllers
             const int supplierId = 10;
             const int productId = 2;
 
-            _supplierService.Setup(s => s.GetById(supplierId))
-                            .Returns(Task.FromResult(new Supplier()));
-            _supplierService.Setup(s => s.GetEntityById(supplierId, productId))
-                            .Returns(Task.FromResult(new Product()));
+            _supplierService.Setup(s => s.GetById(supplierId)).ReturnsAsync(new Supplier());
+            _supplierService.Setup(s => s.GetEntityById(supplierId, productId)).ReturnsAsync(new Product());
 
             var response = await _suppliersController.DeleteSupplierProduct(supplierId, productId);
 
-            Assert.IsType<ActionResult<ProductModel>>(response);
-            Assert.IsType<BadRequestResult>(response.Result);
+            Assert.IsType<BadRequestResult>(response);
             _supplierService.Verify(s => s.DeleteEntity(supplierId, It.IsAny<Product>()));
         }
     }
