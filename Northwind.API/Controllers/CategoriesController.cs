@@ -155,8 +155,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpDelete("{categoryId:int}/products/{productId:int}")]
-        public async Task<ActionResult<ProductModel>> DeleteCategoryProduct(int categoryId,
-                                                                            int productId)
+        public async Task<ActionResult> DeleteCategoryProduct(int categoryId, int productId)
         {
             await DoesCategoryExist(categoryId);
 
