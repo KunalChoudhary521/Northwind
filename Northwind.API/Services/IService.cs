@@ -7,7 +7,7 @@ namespace Northwind.API.Services
     {
         Task<ICollection<T>> GetAll();
         Task<T> GetById(int entityId);
-        void Add(T category);
+        void Add(T entity);
         void Update(T entity);
         Task Delete(T entity);
         Task<bool> IsSavedToDb();

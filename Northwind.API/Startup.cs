@@ -80,6 +80,7 @@ namespace Northwind.API
             services.AddScoped<IRepository<Supplier>, SupplierRepository>();
             services.AddScoped<IRepository<Customer>, CustomerRepository>();
             services.AddScoped<IRepository<Order>, OrderRepository>();
+            services.AddScoped<IRepository<Shipper>, ShipperRepository>();
         }
 
         private void ConfigureAppServices(IServiceCollection services)
@@ -87,6 +88,7 @@ namespace Northwind.API
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ISupplierService, SupplierService>();
             services.AddScoped<ICustomerService, CustomerService>();
+            services.AddScoped<IShipperService, ShipperService>();
         }
     }
 }
