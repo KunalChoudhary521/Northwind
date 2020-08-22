@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Northwind.API.Models;
 using Northwind.API.Models.Orders;
 using Northwind.Data.Entities;
 
@@ -18,6 +19,8 @@ namespace Northwind.API.Profiles
 
             CreateMap<OrderDetail, OrderItemResponseModel>()
                 .ForMember(oi => oi.ProductName, opt => opt.MapFrom(od => od.Product.ProductName));
+
+            CreateMap<ShipperOrderModel, Order>();
         }
     }
 }

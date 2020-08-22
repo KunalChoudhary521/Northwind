@@ -1,7 +1,10 @@
 ﻿using System.Threading.Tasks;
 using AutoMapper;
+using Hellang.Middleware.ProblemDetails;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Northwind.API.Models;
+using Northwind.API.Models.Orders;
 using Northwind.API.Services;
 using Northwind.Data.Entities;
 
@@ -54,7 +57,6 @@ namespace Northwind.API.Controllers
                 return CreatedAtAction(nameof(GetShipper),
                                        new { shipperId = persistedShipperModel.ShipperId },
                                        persistedShipperModel);
-
             }
 
             return BadRequest();
@@ -89,6 +91,77 @@ namespace Northwind.API.Controllers
                 return Ok($"Shipper with id '{shipperId}' has been deleted");
 
             return BadRequest();
+        }
+
+        [HttpGet("{shipperId:int}/orders")]
+        public async Task<ActionResult<OrderResponseModel[]>> GetShipperOrders(int shipperId)
+        {
+            await DoesShipperExist(shipperId);
+
+            var orders = await _shipperService.GetAllEntities(shipperId);
+            return _mapper.Map<OrderResponseModel[]>(orders);
+        }
+
+        [HttpGet("{shipperId:int}/orders/{orderId:int}")]
+        public async Task<ActionResult<OrderResponseModel>> GetShipperOrder(int shipperId, int orderId)
+        {
+            await DoesShipperExist(shipperId);
+
+            var order = await GetOrder(shipperId, orderId);
+            return _mapper.Map<OrderResponseModel>(order);
+        }
+
+        [HttpPut("{shipperId:int}/orders/{orderId:int}")]
+        public async Task<ActionResult<OrderResponseModel>> UpdateShipperOrder(int shipperId, int orderId,
+                                                                               ShipperOrderModel orderModel)
+        {
+            await DoesShipperExist(shipperId);
+
+            var oldOrder = await _shipperService.GetOrderById(orderId);
+            if(oldOrder == null)
+                throw new ProblemDetailsException(StatusCodes.Status404NotFound,
+                                                  $"Order with id {orderId} not found");
+
+            var newOrder = _mapper.Map(orderModel, oldOrder);
+            _shipperService.UpdateEntity(shipperId, newOrder);
+
+            if (await _shipperService.IsSavedToDb())
+                return Ok(_mapper.Map<OrderResponseModel>(newOrder));
+
+            return BadRequest();
+        }
+
+        [HttpDelete("{shipperId:int}/orders/{orderId:int}")]
+        public async Task<ActionResult<OrderResponseModel>> DeleteShipperOrder(int shipperId, int orderId)
+        {
+            await DoesShipperExist(shipperId);
+
+            var existingOrder = await GetOrder(shipperId, orderId);
+
+            _shipperService.DeleteEntity(shipperId, existingOrder);
+
+            if (await _shipperService.IsSavedToDb())
+                return Ok($"Order with id '{orderId}' of shipper " +
+                          $"with id {shipperId} has been deleted");
+
+            return BadRequest();
+        }
+
+        private async Task DoesShipperExist(int shipperId)
+        {
+            if (await _shipperService.GetById(shipperId) == null)
+                throw new ProblemDetailsException(StatusCodes.Status404NotFound,
+                                                  $"Shipper with id {shipperId} not found");
+        }
+
+        private async Task<Order> GetOrder(int shipperId, int orderId)
+        {
+            var order = await _shipperService.GetEntityById(shipperId, orderId);
+
+            if (order == null)
+                throw new ProblemDetailsException(StatusCodes.Status404NotFound,
+                                                  $"Order with id {orderId} not found");
+            return order;
         }
     }
 }
