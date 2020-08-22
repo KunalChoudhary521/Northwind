@@ -1,10 +1,13 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using AutoMapper;
+using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Northwind.API.Controllers;
 using Northwind.API.Models;
+using Northwind.API.Models.Orders;
 using Northwind.API.Profiles;
 using Northwind.API.Services;
 using Northwind.Data.Entities;
@@ -21,7 +24,7 @@ namespace Northwind.Tests.UnitTests.Controllers
         {
             var mapperConfig = new MapperConfiguration(config =>
             {
-                config.AddProfiles(new Profile[] { new ShipperProfile() });
+                config.AddProfiles(new Profile[] { new ShipperProfile(), new OrderProfile() });
             });
 
             var mapper = mapperConfig.CreateMapper();
@@ -117,6 +120,139 @@ namespace Northwind.Tests.UnitTests.Controllers
 
             Assert.IsType<BadRequestResult>(response);
             _shipperService.Verify(sh => sh.Delete(It.IsAny<Shipper>()));
+        }
+
+        [Fact]
+        public async Task IdOfNonExistentShipper_GetShipperOrders_ReturnNotFound()
+        {
+            const int shipperId = -1;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _shipperController.GetShipperOrders(shipperId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("shipper", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonExistentShipper_GetShipperOrder_ReturnNotFound()
+        {
+            const int shipperId = -1;
+            const int orderId = 4;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _shipperController.GetShipperOrder(shipperId, orderId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("shipper", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonExistentOrder_GetShipperOrder_ReturnNotFound()
+        {
+            const int shipperId = 16;
+            const int orderId = -1;
+
+            _shipperService.Setup(sh => sh.GetById(shipperId)).ReturnsAsync(new Shipper());
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _shipperController.GetShipperOrder(shipperId, orderId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("order", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonExistentShipper_UpdateShipperOrder_ReturnNotFound()
+        {
+            const int shipperId = -1;
+            const int orderId = 4;
+            var shipperOrderModel = new ShipperOrderModel();
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _shipperController.UpdateShipperOrder(shipperId, orderId, shipperOrderModel));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("shipper", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonExistentOrder_UpdateShipperOrder_ReturnNotFound()
+        {
+            const int shipperId = 3;
+            const int orderId = -1;
+            var shipperOrderModel = new ShipperOrderModel();
+
+            _shipperService.Setup(sh => sh.GetById(shipperId)).ReturnsAsync(new Shipper());
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _shipperController.UpdateShipperOrder(shipperId, orderId, shipperOrderModel));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("order", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task FailedToSaveUpdatedOrder_UpdateShipperOrder_ReturnBadRequest()
+        {
+            const int shipperId = 3;
+            const int orderId = 8;
+            var shipperOrderModel = new ShipperOrderModel();
+
+            _shipperService.Setup(sh => sh.GetById(shipperId)).ReturnsAsync(new Shipper());
+            _shipperService.Setup(sh => sh.GetOrderById(orderId)).ReturnsAsync(new Order());
+
+            var response = await _shipperController.UpdateShipperOrder(shipperId, orderId,
+                                                                       shipperOrderModel);
+
+            Assert.IsType<ActionResult<OrderResponseModel>>(response);
+            Assert.IsType<BadRequestResult>(response.Result);
+            _shipperService.Verify(sh => sh.UpdateEntity(shipperId, It.IsAny<Order>()));
+        }
+
+        [Fact]
+        public async Task IdOfNonExistentShipper_DeleteShipperOrder_ReturnNotFound()
+        {
+            const int shipperId = -1;
+            const int orderId = 4;
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _shipperController.DeleteShipperOrder(shipperId, orderId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("shipper", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task IdOfNonExistentOrder_DeleteShipperOrder_ReturnNotFound()
+        {
+            const int shipperId = 6;
+            const int orderId = -3;
+
+            _shipperService.Setup(sh => sh.GetById(shipperId)).ReturnsAsync(new Shipper());
+
+            var exception = await Assert.ThrowsAsync<ProblemDetailsException>(() =>
+                _shipperController.DeleteShipperOrder(shipperId, orderId));
+
+            Assert.Equal(StatusCodes.Status404NotFound, exception.Details.Status);
+            Assert.Contains("order", exception.Details.Title, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task FailedToSaveChangesAfterDelete_DeleteShipperOrder_ReturnBadRequest()
+        {
+            const int shipperId = 3;
+            const int orderId = 8;
+
+            _shipperService.Setup(sh => sh.GetById(shipperId)).ReturnsAsync(new Shipper());
+            _shipperService.Setup(sh => sh.GetEntityById(shipperId, orderId))
+                           .ReturnsAsync(new Order());
+
+            var response = await _shipperController.DeleteShipperOrder(shipperId, orderId);
+
+            Assert.IsType<ActionResult<OrderResponseModel>>(response);
+            Assert.IsType<BadRequestResult>(response.Result);
+            _shipperService.Verify(sh => sh.DeleteEntity(shipperId, It.IsAny<Order>()));
         }
     }
 }

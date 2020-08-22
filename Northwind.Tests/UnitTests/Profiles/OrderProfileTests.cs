@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using Northwind.API.Models;
 using Northwind.API.Models.Orders;
 using Northwind.API.Profiles;
 using Northwind.Data.Entities;
@@ -71,8 +72,12 @@ namespace Northwind.Tests.UnitTests.Profiles
             var order = new Order
             {
                 OrderId = 10,
+                ShipperId = 17,
+                CustomerId = 6,
                 OrderDate = DateTimeOffset.Parse("2020-03-16T09:59:58-04:00"),
                 RequiredDate = DateTimeOffset.Parse("2020-08-07T19:00:00+00:00"),
+                ShippedDate = DateTimeOffset.Parse("2020-08-09T19:00:00+00:00"),
+                ShipName = "Vulkan",
                 Total = new decimal(13.40),
                 OrderDetails = new List<OrderDetail>
                 {
@@ -96,11 +101,16 @@ namespace Northwind.Tests.UnitTests.Profiles
             var orderResponseModel = _mapper.Map<OrderResponseModel>(order);
 
             Assert.Equal(10, orderResponseModel.OrderId);
+            Assert.Equal(17, orderResponseModel.ShipperId);
+            Assert.Equal(6, orderResponseModel.CustomerId);
             Assert.Equal(new decimal(13.40), orderResponseModel.Total);
             Assert.Equal(new DateTimeOffset(2020, 3, 16, 9, 59, 58, TimeSpan.FromHours(-4)),
                          orderResponseModel.OrderDate);
-            Assert.Equal(new DateTimeOffset(2020, 8, 7, 19, 0, 0, TimeSpan.Zero), orderResponseModel.RequiredDate);
-            Assert.Null(orderResponseModel.ShippedDate);
+            Assert.Equal(new DateTimeOffset(2020, 8, 7, 19, 0, 0, TimeSpan.Zero),
+                         orderResponseModel.RequiredDate);
+            Assert.Equal(new DateTimeOffset(2020, 8, 9, 19, 0, 0, TimeSpan.Zero),
+                         orderResponseModel.ShippedDate);
+            Assert.Equal("Vulkan", orderResponseModel.ShipName);
 
             var items = orderResponseModel.OrderItems.ToArray();
             Assert.Equal(2, items.Length);
@@ -114,6 +124,21 @@ namespace Northwind.Tests.UnitTests.Profiles
             Assert.Equal(5, items[1].ProductId);
             Assert.Equal("Product #2", items[1].ProductName);
             Assert.Equal(3, items[1].Quantity);
+        }
+
+        [Fact]
+        public void ShipperOrderModel_ShipperOrderModelToOrder_ReturnOrder()
+        {
+            var shipperOrderModel = new ShipperOrderModel
+            {
+                ShippedDate = DateTimeOffset.Parse("2020-08-22T15:00:00-04:00"),
+                ShipName = "Providence"
+            };
+
+            var order = _mapper.Map<Order>(shipperOrderModel);
+
+            Assert.Equal(new DateTimeOffset(2020, 8, 22, 15, 0, 0, new TimeSpan(-4, 0, 0)), order.ShippedDate);
+            Assert.Equal("Providence", order.ShipName);
         }
     }
 }
