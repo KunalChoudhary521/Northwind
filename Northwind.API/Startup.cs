@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AutoMapper;
 using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Builder;
@@ -7,15 +8,19 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using Northwind.API.Repositories;
 using Northwind.API.Services;
 using Northwind.Data.Contexts;
 using Northwind.Data.Entities;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 namespace Northwind.API
 {
     public class Startup
     {
+        private const string SwaggerDocName = "northwind";
+
         public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
@@ -53,6 +58,13 @@ namespace Northwind.API
                 endpoints.MapControllers();
                 endpoints.MapHealthChecks("/api/health");
             });
+
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint($"/swagger/{SwaggerDocName}/swagger.json", "Northwind API");
+                options.DocExpansion(DocExpansion.None);
+            });
         }
 
         private void ConfigureDbContext(IServiceCollection services)
@@ -70,6 +82,41 @@ namespace Northwind.API
         {
             services.AddAutoMapper(typeof(Startup));
             services.AddProblemDetails();
+            services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc($"{SwaggerDocName}", new OpenApiInfo
+                {
+                    Title = "Northwind API",
+                    Description = "API documentation for Northwind"
+                });
+
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = @"JWT Authorization header using Bearer scheme. <br> Enter: 'Bearer' [token]",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            },
+                            Scheme = "oauth2",
+                            Name = "Bearer",
+                            In = ParameterLocation.Header
+                        },
+                        new List<string>()
+                    }
+                });
+            });
         }
 
         private void ConfigureRepositories(IServiceCollection services)
