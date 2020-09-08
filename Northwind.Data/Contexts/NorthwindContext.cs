@@ -5,6 +5,9 @@ namespace Northwind.Data.Contexts
 {
     public class NorthwindContext : DbContext
     {
+        private const string UuidOssp = "uuid-ossp";
+        private const string UuidGeneratev4 = "uuid_generate_v4()";
+
         public DbSet<Category> Categories { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Employee> Employees { get; set; }
@@ -13,6 +16,7 @@ namespace Northwind.Data.Contexts
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<Shipper> Shippers { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<User> Users { get; set; }
 
         public NorthwindContext(DbContextOptions<NorthwindContext> options) : base(options)
         {
@@ -35,6 +39,19 @@ namespace Northwind.Data.Contexts
             modelBuilder.Entity<Order>()
                         .Property(o => o.ShipperId)
                         .HasColumnName("ShipVia");
+
+            modelBuilder.HasPostgresExtension(UuidOssp)
+                        .Entity<User>()
+                        .Property(u => u.UserIdentifier)
+                        .HasDefaultValueSql(UuidGeneratev4);
+
+            //Table sharing
+            modelBuilder.Entity<User>()
+                        .HasOne(u => u.RefreshToken)
+                        .WithOne()
+                        .HasForeignKey<RefreshToken>(rt => rt.RefreshTokenId);
+
+            modelBuilder.Entity<RefreshToken>().ToTable("Users");
         }
     }
 }
