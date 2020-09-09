@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using System;
+using System.Text;
 using AutoMapper;
 using Hellang.Middleware.ProblemDetails;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +11,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Northwind.API.Helpers;
 using Northwind.API.Repositories;
 using Northwind.API.Services;
 using Northwind.Data.Contexts;
@@ -33,13 +38,14 @@ namespace Northwind.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
             ConfigureDbContext(services);
             ConfigureThirdPartyDependencies(services);
             ConfigureRepositories(services);
             ConfigureAppServices(services);
-            services.AddHealthChecks()
-                    .AddDbContextCheck<NorthwindContext>();
+            ConfigureAuthentication(services);
+
+            services.AddHealthChecks().AddDbContextCheck<NorthwindContext>();
+            services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -51,6 +57,7 @@ namespace Northwind.API
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
@@ -136,6 +143,34 @@ namespace Northwind.API
             services.AddScoped<ISupplierService, SupplierService>();
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IShipperService, ShipperService>();
+        }
+
+        private void ConfigureAuthentication(IServiceCollection services)
+        {
+            var authSettingsSection = Configuration.GetSection("AuthSettings");
+            var authSettings = authSettingsSection.Get<AuthSettings>();
+
+            services.Configure<AuthSettings>(authSettingsSection);
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidAudience = authSettings.ValidAudience,
+                    ValidIssuer = authSettings.ValidIssuer,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authSettings.SecretKey)),
+                    ClockSkew = TimeSpan.Zero
+                };
+
+            });
         }
     }
 }
