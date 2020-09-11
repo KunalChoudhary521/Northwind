@@ -146,6 +146,7 @@ namespace Northwind.API
             services.AddScoped<IShipperService, ShipperService>();
             services.AddScoped<ICryptoService, CryptoService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IUserService, UserService>();
         }
 
         private void ConfigureAuthentication(IServiceCollection services)
