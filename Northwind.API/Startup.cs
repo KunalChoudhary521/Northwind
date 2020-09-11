@@ -135,6 +135,7 @@ namespace Northwind.API
             services.AddScoped<IRepository<Customer>, CustomerRepository>();
             services.AddScoped<IRepository<Order>, OrderRepository>();
             services.AddScoped<IRepository<Shipper>, ShipperRepository>();
+            services.AddScoped<IRepository<User>, UserRepository>();
         }
 
         private void ConfigureAppServices(IServiceCollection services)
@@ -143,6 +144,8 @@ namespace Northwind.API
             services.AddScoped<ISupplierService, SupplierService>();
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IShipperService, ShipperService>();
+            services.AddScoped<ICryptoService, CryptoService>();
+            services.AddScoped<IAuthService, AuthService>();
         }
 
         private void ConfigureAuthentication(IServiceCollection services)

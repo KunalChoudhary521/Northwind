@@ -1,0 +1,7 @@
+﻿namespace Northwind.API.Services
+{
+    public interface ICryptoService
+    {
+        bool IsPasswordCorrect(string password, byte[] testSalt, byte[] testHash);
+    }
+}
