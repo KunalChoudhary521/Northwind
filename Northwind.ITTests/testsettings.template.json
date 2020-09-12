@@ -1,0 +1,14 @@
+﻿{
+  "ConnectionStrings":{
+    "ITTestDB": "Database=TestDB"
+  },
+  "AuthSettings": {
+    "SecretKey": "xyz",
+    "ExpiryDuration": "1",
+    "ValidAudience": "http://server-domain.com",
+    "ValidIssuer": "http://server-domain.com"
+  },
+  "ApiCredentials": {
+    "AccessToken": "ApiAccessToken"
+  }
+}
