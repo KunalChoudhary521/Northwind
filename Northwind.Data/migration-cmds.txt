@@ -16,3 +16,7 @@ To remove previous migration:
 
 To apply migration to DB:
 > dotnet ef database update -p Northwind.Data -s Northwind.API
+
+To revert database back to an earlier migration:
+> dotnet ef database update <Last_Good_Migration> -p Northwind.Data -s Northwind.API
+> dotnet ef migrations remove -p Northwind.Data -s Northwind.API
