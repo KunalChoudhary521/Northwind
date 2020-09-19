@@ -10,6 +10,7 @@ namespace Northwind.Data.Entities
         public byte[] PasswordSalt { get; set; }
         public byte[] PasswordHash { get; set; }
         public string AccessToken { get; set; }
+        public Role Role { get; set; }
 
         // Navigation property
         public RefreshToken RefreshToken { get; set; }

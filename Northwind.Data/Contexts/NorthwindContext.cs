@@ -41,15 +41,16 @@ namespace Northwind.Data.Contexts
                         .HasColumnName("ShipVia");
 
             modelBuilder.HasPostgresExtension(UuidOssp)
-                        .Entity<User>()
-                        .Property(u => u.UserIdentifier)
-                        .HasDefaultValueSql(UuidGeneratev4);
+                        .Entity<User>(entity =>
+                        {
+                            entity.Property(u => u.UserIdentifier).HasDefaultValueSql(UuidGeneratev4);
+                            entity.Property(u => u.Role).HasConversion<string>();
 
-            //Table sharing
-            modelBuilder.Entity<User>()
-                        .HasOne(u => u.RefreshToken)
-                        .WithOne()
-                        .HasForeignKey<RefreshToken>(rt => rt.RefreshTokenId);
+                            // Table sharing
+                            entity.HasOne(u => u.RefreshToken)
+                                  .WithOne()
+                                  .HasForeignKey<RefreshToken>(rt => rt.RefreshTokenId);
+                        });
 
             modelBuilder.Entity<RefreshToken>().ToTable("Users");
         }
