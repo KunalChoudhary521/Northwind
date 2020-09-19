@@ -88,7 +88,8 @@ namespace Northwind.API.Services
             {
                 Subject = new ClaimsIdentity(new []
                 {
-                    new Claim(ClaimTypes.NameIdentifier, user.UserIdentifier.ToString())
+                    new Claim(ClaimTypes.NameIdentifier, user.UserIdentifier.ToString()),
+                    new Claim(ClaimTypes.Role, user.Role.ToString())
                 }),
                 Expires = DateTimeOffset.UtcNow.Add(new TimeSpan(_authSettings.ExpiryDuration)).UtcDateTime,
                 Audience = _authSettings.ValidAudience,
