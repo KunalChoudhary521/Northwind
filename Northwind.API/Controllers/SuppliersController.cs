@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using AutoMapper;
 using Hellang.Middleware.ProblemDetails;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Northwind.API.Models;
@@ -11,6 +12,7 @@ namespace Northwind.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class SuppliersController : ControllerBase
     {
         private readonly ISupplierService _supplierService;
@@ -23,6 +25,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = nameof(PolicyService.Supplier))]
         public async Task<ActionResult<SupplierModel[]>> GetSuppliers()
         {
             var suppliers = await _supplierService.GetAll();
@@ -34,6 +37,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpGet("{supplierId:int}")]
+        [Authorize(Policy = nameof(PolicyService.Supplier))]
         public async Task<ActionResult<SupplierModel>> GetSupplier(int supplierId)
         {
             var suppliers = await _supplierService.GetById(supplierId);
@@ -45,6 +49,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = nameof(PolicyService.SupplierAdmin))]
         public async Task<ActionResult<SupplierModel>> AddSupplier(SupplierModel supplierModel)
         {
             var supplier = _mapper.Map<Supplier>(supplierModel);
@@ -61,6 +66,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpPut("{supplierId:int}")]
+        [Authorize(Policy = nameof(PolicyService.SupplierAdmin))]
         public async Task<ActionResult<SupplierModel>> UpdateSupplier(int supplierId, SupplierModel supplierModel)
         {
             var oldSupplier = await _supplierService.GetById(supplierId);
@@ -77,6 +83,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpDelete("{supplierId:int}")]
+        [Authorize(Policy = nameof(PolicyService.SupplierAdmin))]
         public async Task<ActionResult> DeleteSupplier(int supplierId)
         {
             var existingSupplier = await _supplierService.GetById(supplierId);
@@ -92,6 +99,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpGet("{supplierId:int}/products")]
+        [Authorize(Policy = nameof(PolicyService.Supplier))]
         public async Task<ActionResult<ProductModel[]>> GetSupplierProducts(int supplierId)
         {
             await DoesSupplierExist(supplierId);
@@ -101,6 +109,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpGet("{supplierId:int}/products/{productId:int}")]
+        [Authorize(Policy = nameof(PolicyService.Supplier))]
         public async Task<ActionResult<ProductModel>> GetSupplierProduct(int supplierId, int productId)
         {
             await DoesSupplierExist(supplierId);
@@ -111,6 +120,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpPost("{supplierId:int}/products")]
+        [Authorize(Policy = nameof(PolicyService.Supplier))]
         public async Task<ActionResult<ProductModel>> AddSupplierProduct(int supplierId,
                                                                          ProductModel productModel)
         {
@@ -130,6 +140,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpPut("{supplierId:int}/products/{productId:int}")]
+        [Authorize(Policy = nameof(PolicyService.Supplier))]
         public async Task<ActionResult<ProductModel>> UpdateSupplierProduct(int supplierId,
                                                                             int productId,
                                                                             ProductModel productModel)
@@ -148,6 +159,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpDelete("{supplierId:int}/products/{productId:int}")]
+        [Authorize(Policy = nameof(PolicyService.Supplier))]
         public async Task<ActionResult> DeleteSupplierProduct(int supplierId, int productId)
         {
             await DoesSupplierExist(supplierId);

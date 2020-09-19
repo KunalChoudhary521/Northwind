@@ -62,6 +62,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpPost("revoke")]
+        [Authorize(Policy = nameof(PolicyService.Admin))]
         public async Task<ActionResult> RevokeCredentials(RefreshTokenRequest refreshTokenRequest)
         {
             var refreshToken = refreshTokenRequest.RefreshToken;

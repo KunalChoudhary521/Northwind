@@ -1,9 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Northwind.API.Models;
-using Northwind.API.Models.Auth;
+using Northwind.API.Models.Users;
 using Northwind.API.Services;
 using Northwind.Data.Entities;
 
@@ -24,12 +27,14 @@ namespace Northwind.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = nameof(PolicyService.Admin))]
         public async Task<ActionResult<UserModel[]>> GetUsers()
         {
             return _mapper.Map<UserModel[]>(await _userService.GetAll());
         }
 
         [HttpGet("{userId:int}")]
+        [Authorize(Policy = nameof(PolicyService.Admin))]
         public async Task<ActionResult<UserModel>> GetUser(int userId)
         {
             var user = await _userService.GetById(userId);
@@ -48,17 +53,25 @@ namespace Northwind.API.Controllers
             if (user == null)
                 return NotFound();
 
+            var claimName = User.Claims.FirstOrDefault(claim => claim.Type.Equals(ClaimTypes.NameIdentifier))?.Value;
+            if (!user.UserIdentifier.ToString().Equals(claimName) && !User.IsInRole(nameof(Role.Admin)))
+                return Forbid();
+
             return _mapper.Map<UserModel>(user);
         }
 
         [HttpPost]
-        public async Task<ActionResult<UserModel>> AddUser(AuthRequestModel authRequestModel)
+        [Authorize(Policy = nameof(PolicyService.Admin))]
+        public async Task<ActionResult<UserModel>> AddUser(UserRequestModel userRequestModel)
         {
-            if (await _userService.GetByUserName(authRequestModel.UserName) != null)
-                return BadRequest($"user with username {authRequestModel.UserName} already exists");
+            if (await _userService.GetByUserName(userRequestModel.UserName) != null)
+                return BadRequest($"user with username {userRequestModel.UserName} already exists");
 
-            var user = _mapper.Map<User>(authRequestModel);
-            _userService.Add(user, authRequestModel.Password);
+            if(!Enum.TryParse(userRequestModel.Role, true, out Role _))
+                return BadRequest($"The role '{userRequestModel.Role}' is invalid");
+
+            var user = _mapper.Map<User>(userRequestModel);
+            _userService.Add(user, userRequestModel.Password);
 
             if (await _userService.IsSavedToDb())
             {
@@ -72,6 +85,7 @@ namespace Northwind.API.Controllers
         }
 
         [HttpDelete("{userId:int}")]
+        [Authorize(Policy = nameof(PolicyService.Admin))]
         public async Task<ActionResult> DeleteUser(int userId)
         {
             var existingUser = await _userService.GetById(userId);
