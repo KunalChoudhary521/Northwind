@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Northwind.API.Models;
 using Northwind.API.Models.Auth;
+using Northwind.API.Models.Users;
 using Northwind.Data.Entities;
 
 namespace Northwind.API.Profiles
@@ -10,6 +11,8 @@ namespace Northwind.API.Profiles
         public UserProfile()
         {
             CreateMap<User, UserModel>();
+            CreateMap<UserRequestModel, User>();
+
             CreateMap<RefreshToken, RefreshTokenModel>();
 
             CreateMap<AuthRequestModel, User>();
