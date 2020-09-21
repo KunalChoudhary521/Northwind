@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using AutoMapper;
 using Hellang.Middleware.ProblemDetails;
@@ -43,6 +43,7 @@ namespace Northwind.API
             ConfigureRepositories(services);
             ConfigureAppServices(services);
             ConfigureAuthentication(services);
+            ConfigurationAuthorization(services);
 
             services.AddHealthChecks().AddDbContextCheck<NorthwindContext>();
             services.AddControllers();
@@ -173,7 +174,15 @@ namespace Northwind.API
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authSettings.SecretKey)),
                     ClockSkew = TimeSpan.Zero
                 };
+            });
+        }
 
+        private void ConfigurationAuthorization(IServiceCollection services)
+        {
+            services.AddAuthorization(options =>
+            {
+                PolicyService.AddAdminPolicy(options);
+                PolicyService.AddSupplierPolicy(options);
             });
         }
     }
