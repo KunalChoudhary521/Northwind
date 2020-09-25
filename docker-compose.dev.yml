@@ -1,0 +1,23 @@
+# Use this override file with base docker-compose.yml:
+# > docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+version: '3.8'
+
+services:
+  nw_api:
+    build:
+      dockerfile: ./.docker/dotnet_scripts/api.dev.dockerfile
+    ports:
+      - 5000:5000
+    env_file:
+      - ./.docker/dotnet_scripts/api.dev.env
+    volumes:
+      - .:/app
+
+  psql_db:
+    build:
+      dockerfile: ./.docker/psql_scripts/psql_db.test.dockerfile
+    ports:
+      - 5432:5432
+    env_file:
+      - ./.docker/psql_scripts/psql.test.env
