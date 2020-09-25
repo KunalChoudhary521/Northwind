@@ -1,0 +1,36 @@
+# useful commands:
+# To sub-in variables: > docker-compose config
+# To build & run: > docker-compose up --build -d
+# To stop and destroy (remove volumes): > docker-compose down -v --rmi all
+# To enter container: > docker exec -it psql-db bash
+
+version: '3.8'
+
+services:
+  nw_api:
+    image: 'northwind-api-img'
+    container_name: 'northwind-api'
+    build:
+      context: .
+    networks:
+      - northwind-backend
+    depends_on:
+      - psql_db
+
+  psql_db:
+    image: 'psql-db-img'
+    container_name: 'psql-db'
+    build:
+      context: .
+    networks:
+      - northwind-backend
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+networks:
+  northwind-backend:
+    driver: bridge
+
+volumes:
+  pg-data:
+    driver: local

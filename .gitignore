@@ -11,3 +11,6 @@
 
 # ReSharper is a .NET coding add-in
 *.DotSettings.user
+
+# environment files
+.docker/**/*.env

@@ -6,3 +6,5 @@
 .idea
 .vs
 *.DotSettings.user
+db/
+docker-compose.yml
